@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { TrendingUp, TrendingDown, FileText, Clock, Wrench, CheckCircle, ArrowRight } from "lucide-react"
+import { TrendingUp, TrendingDown, FileText, Clock, Wrench, CheckCircle, ArrowRight, Search } from "lucide-react"
 import { Link } from "react-router-dom"
 
 const Index = () => {
