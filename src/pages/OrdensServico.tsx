@@ -7,31 +7,55 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { FileText, Edit, Search } from "lucide-react"
+import { FileText, Edit, Search, Plus, Filter, Calendar } from "lucide-react"
+import { useOrdensServico, useStatusOS, useCreateOrdemServico } from "@/hooks/useOrdensServico"
+import { useClientes } from "@/hooks/useClientes"
 import { toast } from "@/hooks/use-toast"
+import { OrdemServico } from "@/types/database"
 
 const OrdensServico = () => {
   const [showNewOS, setShowNewOS] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
+  const [dateFilter, setDateFilter] = useState("")
+  const [priceFilter, setPriceFilter] = useState("")
+  const [showFilters, setShowFilters] = useState(false)
+  
   const [osItems, setOsItems] = useState([
     { id: 1, quantity: 1, description: "", unitPrice: 0, discount: 0, total: 0 }
   ])
+  
+  const [clienteData, setClienteData] = useState({
+    nome: "",
+    telefone: "",
+    endereco: "",
+    cpf_cnpj: ""
+  })
+  
+  const [statusId, setStatusId] = useState("")
+  const [observacoes, setObservacoes] = useState("")
 
-  const statusColors = {
-    "Recebida": "bg-gray-100 text-gray-800",
-    "Em Análise": "bg-blue-100 text-blue-800",
-    "Aguardando Aprovação": "bg-yellow-100 text-yellow-800",
-    "Em Serviço": "bg-orange-100 text-orange-800",
-    "Pronta para Retirada": "bg-green-100 text-green-800",
-    "Finalizada": "bg-purple-100 text-purple-800"
-  }
+  const { data: ordensServico, isLoading } = useOrdensServico()
+  const { data: statusList } = useStatusOS()
+  const { data: clientes } = useClientes()
+  const createOS = useCreateOrdemServico()
 
-  const mockOrdens = [
-    { id: "001", cliente: "João Silva", telefone: "(11) 99999-9999", status: "Em Serviço", valor: "R$ 150,00", data: "18/06/2025" },
-    { id: "002", cliente: "Maria Santos", telefone: "(11) 88888-8888", status: "Aguardando Aprovação", valor: "R$ 280,00", data: "17/06/2025" },
-    { id: "003", cliente: "Pedro Costa", telefone: "(11) 77777-7777", status: "Pronta para Retirada", valor: "R$ 95,00", data: "16/06/2025" },
-    { id: "004", cliente: "Ana Lima", telefone: "(11) 66666-6666", status: "Recebida", valor: "R$ 320,00", data: "18/06/2025" },
-    { id: "005", cliente: "Carlos Oliveira", telefone: "(11) 55555-5555", status: "Finalizada", valor: "R$ 180,00", data: "15/06/2025" }
-  ]
+  const filteredOrdens = ordensServico?.filter(ordem => {
+    const matchesSearch = ordem.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         ordem.numero_os.toString().includes(searchTerm) ||
+                         ordem.cliente_telefone?.includes(searchTerm)
+    
+    const matchesStatus = !statusFilter || ordem.status_os?.nome === statusFilter
+    
+    const matchesDate = !dateFilter || ordem.created_at.includes(dateFilter)
+    
+    const matchesPrice = !priceFilter || 
+      (priceFilter === "baixo" && ordem.valor_final < 100) ||
+      (priceFilter === "medio" && ordem.valor_final >= 100 && ordem.valor_final < 500) ||
+      (priceFilter === "alto" && ordem.valor_final >= 500)
+    
+    return matchesSearch && matchesStatus && matchesDate && matchesPrice
+  }) || []
 
   const addItem = () => {
     const newItem = {
@@ -63,12 +87,42 @@ const OrdensServico = () => {
   }
 
   const handleCreateOS = () => {
-    toast({
-      title: "O.S. Criada com Sucesso!",
-      description: "Ordem de serviço foi registrada no sistema.",
+    const defaultStatusId = statusList?.[0]?.id || ""
+    
+    const osData = {
+      cliente_nome: clienteData.nome,
+      cliente_telefone: clienteData.telefone,
+      cliente_endereco: clienteData.endereco,
+      cliente_cpf_cnpj: clienteData.cpf_cnpj,
+      status_id: statusId || defaultStatusId,
+      valor_total: calculateTotal(),
+      valor_final: calculateTotal(),
+      observacoes
+    }
+
+    const itensData = osItems.map((item, index) => ({
+      numero_item: index + 1,
+      quantidade: item.quantity,
+      descricao: item.description,
+      preco_unitario: item.unitPrice,
+      desconto: item.discount || 0,
+      total: item.total
+    }))
+
+    createOS.mutate({ os: osData, itens: itensData }, {
+      onSuccess: () => {
+        setShowNewOS(false)
+        setOsItems([{ id: 1, quantity: 1, description: "", unitPrice: 0, discount: 0, total: 0 }])
+        setClienteData({ nome: "", telefone: "", endereco: "", cpf_cnpj: "" })
+        setObservacoes("")
+        setStatusId("")
+      }
     })
-    setShowNewOS(false)
-    setOsItems([{ id: 1, quantity: 1, description: "", unitPrice: 0, discount: 0, total: 0 }])
+  }
+
+  const getStatusColor = (status?: string) => {
+    const statusObj = statusList?.find(s => s.nome === status)
+    return statusObj ? { backgroundColor: statusObj.cor + "20", color: statusObj.cor } : {}
   }
 
   if (showNewOS) {
@@ -92,7 +146,7 @@ const OrdensServico = () => {
               </div>
               <div>
                 <CardTitle className="text-2xl text-brilliant-blue-700 dark:text-brilliant-blue-300">ORDEM DE SERVIÇO</CardTitle>
-                <p className="text-brilliant-blue-600 dark:text-brilliant-blue-400">O.S. #006</p>
+                <p className="text-brilliant-blue-600 dark:text-brilliant-blue-400">Nova O.S.</p>
               </div>
             </div>
           </CardHeader>
@@ -102,36 +156,55 @@ const OrdensServico = () => {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="cliente">Nome do Cliente *</Label>
-                  <Input id="cliente" placeholder="Digite o nome do cliente" />
+                  <Input 
+                    id="cliente" 
+                    placeholder="Digite o nome do cliente"
+                    value={clienteData.nome}
+                    onChange={(e) => setClienteData(prev => ({ ...prev, nome: e.target.value }))}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="endereco">Endereço</Label>
-                  <Input id="endereco" placeholder="Endereço completo" />
+                  <Input 
+                    id="endereco" 
+                    placeholder="Endereço completo"
+                    value={clienteData.endereco}
+                    onChange={(e) => setClienteData(prev => ({ ...prev, endereco: e.target.value }))}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="telefone">Telefone</Label>
-                  <Input id="telefone" placeholder="(xx) xxxxx-xxxx" />
+                  <Input 
+                    id="telefone" 
+                    placeholder="(xx) xxxxx-xxxx"
+                    value={clienteData.telefone}
+                    onChange={(e) => setClienteData(prev => ({ ...prev, telefone: e.target.value }))}
+                  />
                 </div>
               </div>
               
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="documento">CPF/CNPJ</Label>
-                  <Input id="documento" placeholder="000.000.000-00" />
+                  <Input 
+                    id="documento" 
+                    placeholder="000.000.000-00"
+                    value={clienteData.cpf_cnpj}
+                    onChange={(e) => setClienteData(prev => ({ ...prev, cpf_cnpj: e.target.value }))}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <Select defaultValue="Recebida">
+                  <Select value={statusId} onValueChange={setStatusId}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Selecione o status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Recebida">Recebida</SelectItem>
-                      <SelectItem value="Em Análise">Em Análise</SelectItem>
-                      <SelectItem value="Aguardando Aprovação">Aguardando Aprovação</SelectItem>
-                      <SelectItem value="Em Serviço">Em Serviço</SelectItem>
-                      <SelectItem value="Pronta para Retirada">Pronta para Retirada</SelectItem>
-                      <SelectItem value="Finalizada">Finalizada</SelectItem>
+                      {statusList?.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.nome}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -223,6 +296,8 @@ const OrdensServico = () => {
                 id="observacoes"
                 placeholder="Observações adicionais sobre a ordem de serviço..."
                 rows={4}
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
               />
             </div>
 
@@ -230,7 +305,11 @@ const OrdensServico = () => {
               <Button variant="outline" onClick={() => setShowNewOS(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleCreateOS} className="bg-brilliant-blue-600 hover:bg-brilliant-blue-700">
+              <Button 
+                onClick={handleCreateOS} 
+                disabled={!clienteData.nome || createOS.isPending}
+                className="bg-brilliant-blue-600 hover:bg-brilliant-blue-700"
+              >
                 Criar O.S.
               </Button>
             </div>
@@ -238,6 +317,10 @@ const OrdensServico = () => {
         </Card>
       </div>
     )
+  }
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Carregando ordens de serviço...</div>
   }
 
   return (
@@ -255,39 +338,127 @@ const OrdensServico = () => {
 
       <Card className="border-border">
         <CardHeader>
-          <CardTitle className="text-foreground">Lista de Ordens de Serviço</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-foreground">Lista de Ordens de Serviço</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4" />
+              </Button>
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar por cliente, nº O.S. ou telefone..." 
+                className="w-80"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 pt-4 border-t">
+              <div>
+                <Label>Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos os status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos os status</SelectItem>
+                    {statusList?.map((status) => (
+                      <SelectItem key={status.id} value={status.nome}>
+                        {status.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label>Data</Label>
+                <Input 
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <Label>Faixa de Preço</Label>
+                <Select value={priceFilter} onValueChange={setPriceFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todas as faixas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas as faixas</SelectItem>
+                    <SelectItem value="baixo">Até R$ 100</SelectItem>
+                    <SelectItem value="medio">R$ 100 - R$ 500</SelectItem>
+                    <SelectItem value="alto">Acima de R$ 500</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setStatusFilter("")
+                    setDateFilter("")
+                    setPriceFilter("")
+                    setSearchTerm("")
+                  }}
+                >
+                  Limpar Filtros
+                </Button>
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockOrdens.map((ordem) => (
-              <div key={ordem.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-4">
-                  <div className="bg-brilliant-blue-100 dark:bg-brilliant-blue-900 px-3 py-2 rounded-lg">
-                    <span className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300">#{ordem.id}</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">{ordem.cliente}</p>
-                    <p className="text-sm text-muted-foreground">{ordem.telefone}</p>
-                    <p className="text-xs text-muted-foreground">{ordem.data}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  <Badge className={statusColors[ordem.status as keyof typeof statusColors]}>
-                    {ordem.status}
-                  </Badge>
-                  <p className="font-bold text-foreground">{ordem.valor}</p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Search className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+            {filteredOrdens.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {searchTerm || statusFilter || dateFilter || priceFilter ? "Nenhuma O.S. encontrada." : "Nenhuma ordem de serviço cadastrada."}
               </div>
-            ))}
+            ) : (
+              filteredOrdens.map((ordem) => (
+                <div key={ordem.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-brilliant-blue-100 dark:bg-brilliant-blue-900 px-3 py-2 rounded-lg">
+                      <span className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300">
+                        Nº {String(ordem.numero_os).padStart(3, '0')}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">{ordem.cliente_nome}</p>
+                      <p className="text-sm text-muted-foreground">{ordem.cliente_telefone}</p>
+                      <p className="text-xs text-muted-foreground font-medium">
+                        <Calendar className="inline h-3 w-3 mr-1" />
+                        {new Date(ordem.created_at).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <Badge style={getStatusColor(ordem.status_os?.nome)}>
+                      {ordem.status_os?.nome || "Sem Status"}
+                    </Badge>
+                    <p className="font-bold text-foreground">R$ {ordem.valor_final.toFixed(2)}</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
