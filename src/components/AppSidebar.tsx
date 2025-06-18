@@ -4,7 +4,10 @@ import {
   FileText, 
   Calendar, 
   Search,
-  Edit
+  Edit,
+  TrendingUp,
+  Users,
+  Settings
 } from "lucide-react"
 
 import {
@@ -25,6 +28,9 @@ const menuItems = [
   { title: "Ordens de Serviço", url: "/ordens-servico", icon: FileText },
   { title: "Clientes", url: "/clientes", icon: Search },
   { title: "Estoque", url: "/estoque", icon: Edit },
+  { title: "Fornecedores", url: "/fornecedores", icon: Users },
+  { title: "Faturamento", url: "/faturamento", icon: TrendingUp },
+  { title: "Administração", url: "/admin", icon: Settings },
 ]
 
 export function AppSidebar() {
