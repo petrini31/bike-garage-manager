@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -18,7 +19,23 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'inter': ['Inter', 'sans-serif'],
+			},
 			colors: {
+				'brilliant-blue': {
+					DEFAULT: '#0066CC',
+					50: '#E6F0FF',
+					100: '#CCE1FF',
+					200: '#99C3FF',
+					300: '#66A5FF',
+					400: '#3387FF',
+					500: '#0066CC',
+					600: '#0052A3',
+					700: '#003D7A',
+					800: '#002952',
+					900: '#001529',
+				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
