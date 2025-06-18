@@ -9,7 +9,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <SidebarProvider collapsedWidth={56}>
+    <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         
@@ -21,7 +21,7 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Rua Sete de Setembro, 44 - Vila Slles - Atibaia-SP</span>
+              <span className="text-sm text-muted-foreground">Rua Sete de Setembro, 44 - Vila Salles - Atibaia-SP</span>
             </div>
           </header>
           

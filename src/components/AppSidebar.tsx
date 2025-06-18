@@ -1,5 +1,4 @@
 
-import { useState } from "react"
 import { NavLink, useLocation } from "react-router-dom"
 import { 
   FileText, 
@@ -29,12 +28,12 @@ const menuItems = [
 ]
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar()
+  const { state } = useSidebar()
   const location = useLocation()
   const currentPath = location.pathname
 
   const isActive = (path: string) => currentPath === path
-  const isExpanded = menuItems.some((item) => isActive(item.url))
+  const collapsed = state === "collapsed"
   
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"
@@ -42,7 +41,7 @@ export function AppSidebar() {
   return (
     <Sidebar
       className={collapsed ? "w-14" : "w-64"}
-      collapsible
+      collapsible="offcanvas"
     >
       <SidebarTrigger className="m-2 self-end text-sidebar-foreground hover:bg-sidebar-accent" />
 
@@ -61,9 +60,7 @@ export function AppSidebar() {
           </div>
         </div>
 
-        <SidebarGroup
-          open={isExpanded}
-        >
+        <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/80">Menu Principal</SidebarGroupLabel>
 
           <SidebarGroupContent>
