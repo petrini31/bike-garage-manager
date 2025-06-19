@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Edit, Search, Plus, Filter, Calendar, Trash2, X, Eye } from "lucide-react"
-import { useOrdensServico, useStatusOS, useCreateOrdemServico } from "@/hooks/useOrdensServico"
+import { useOrdensServico, useCreateOrdemServico } from "@/hooks/useOrdensServico"
+import { useStatusOS } from "@/hooks/useStatusOS"
 import { useClientes } from "@/hooks/useClientes"
 import { useProdutos } from "@/hooks/useProdutos"
 import { ProdutoSelectorDialog } from "@/components/dialogs/ProdutoSelectorDialog"
@@ -31,9 +32,9 @@ interface OSItem {
 const OrdensServico = () => {
   const [showNewOS, setShowNewOS] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("")
-  const [priceFilter, setPriceFilter] = useState("")
+  const [priceFilter, setPriceFilter] = useState("all")
   const [showFilters, setShowFilters] = useState(false)
   const [showClienteSearch, setShowClienteSearch] = useState(false)
   const [showProdutoSelector, setShowProdutoSelector] = useState(false)
@@ -68,11 +69,11 @@ const OrdensServico = () => {
                          ordem.numero_os.toString().includes(searchTerm) ||
                          ordem.cliente_telefone?.includes(searchTerm)
     
-    const matchesStatus = !statusFilter || ordem.status_os?.nome === statusFilter
+    const matchesStatus = statusFilter === "all" || ordem.status_os?.nome === statusFilter
     
     const matchesDate = !dateFilter || ordem.created_at.includes(dateFilter)
     
-    const matchesPrice = !priceFilter || 
+    const matchesPrice = priceFilter === "all" || 
       (priceFilter === "baixo" && ordem.valor_final < 100) ||
       (priceFilter === "medio" && ordem.valor_final >= 100 && ordem.valor_final < 500) ||
       (priceFilter === "alto" && ordem.valor_final >= 500)
@@ -604,7 +605,7 @@ const OrdensServico = () => {
                     <SelectValue placeholder="Todos os status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os status</SelectItem>
+                    <SelectItem value="all">Todos os status</SelectItem>
                     {statusList?.map((status) => (
                       <SelectItem key={status.id} value={status.nome}>
                         {status.nome}
@@ -630,7 +631,7 @@ const OrdensServico = () => {
                     <SelectValue placeholder="Todas as faixas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as faixas</SelectItem>
+                    <SelectItem value="all">Todas as faixas</SelectItem>
                     <SelectItem value="baixo">Até R$ 100</SelectItem>
                     <SelectItem value="medio">R$ 100 - R$ 500</SelectItem>
                     <SelectItem value="alto">Acima de R$ 500</SelectItem>
@@ -642,9 +643,9 @@ const OrdensServico = () => {
                 <Button 
                   variant="outline" 
                   onClick={() => {
-                    setStatusFilter("")
+                    setStatusFilter("all")
                     setDateFilter("")
-                    setPriceFilter("")
+                    setPriceFilter("all")
                     setSearchTerm("")
                   }}
                 >
@@ -658,7 +659,7 @@ const OrdensServico = () => {
           <div className="space-y-4">
             {filteredOrdens.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                {searchTerm || statusFilter || dateFilter || priceFilter ? "Nenhuma O.S. encontrada." : "Nenhuma ordem de serviço cadastrada."}
+                {searchTerm || statusFilter !== "all" || dateFilter || priceFilter !== "all" ? "Nenhuma O.S. encontrada." : "Nenhuma ordem de serviço cadastrada."}
               </div>
             ) : (
               filteredOrdens.map((ordem) => (
