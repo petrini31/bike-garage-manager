@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -7,12 +6,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { FileText, Edit, Search, Plus, Filter, Calendar, Trash2, X, Eye } from "lucide-react"
-import { useOrdensServico, useCreateOrdemServico } from "@/hooks/useOrdensServico"
+import { FileText, Edit, Search, Plus, Filter, Calendar, Trash2, X, Eye, Zap } from "lucide-react"
+import { useOrdensServico, useCreateOrdemServico, useOrdemServicoById } from "@/hooks/useOrdensServico"
 import { useStatusOS } from "@/hooks/useStatusOS"
 import { useClientes } from "@/hooks/useClientes"
 import { useProdutos } from "@/hooks/useProdutos"
 import { ProdutoSelectorDialog } from "@/components/dialogs/ProdutoSelectorDialog"
+import { QuickStatusDialog } from "@/components/dialogs/QuickStatusDialog"
 import { toast } from "@/hooks/use-toast"
 import { OrdemServico, Cliente, Produto } from "@/types/database"
 import { formatPhone, formatCPF } from "@/utils/formatters"
@@ -31,6 +31,9 @@ interface OSItem {
 
 const OrdensServico = () => {
   const [showNewOS, setShowNewOS] = useState(false)
+  const [editingOS, setEditingOS] = useState<OrdemServico | null>(null)
+  const [viewingOS, setViewingOS] = useState<OrdemServico | null>(null)
+  const [quickStatusOS, setQuickStatusOS] = useState<OrdemServico | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("")
@@ -114,7 +117,6 @@ const OrdensServico = () => {
   }
 
   const selectCliente = (cliente: Cliente) => {
-    // Dividir endereço se possível
     const enderecoArray = cliente.endereco?.split(", ") || []
     
     setClienteData({
@@ -158,7 +160,6 @@ const OrdensServico = () => {
   const handleCreateOS = () => {
     const defaultStatusId = statusList?.[0]?.id || ""
     
-    // Combinar campos de endereço
     const enderecoCompleto = [
       clienteData.endereco,
       clienteData.numero,
@@ -203,6 +204,23 @@ const OrdensServico = () => {
     return statusObj ? { backgroundColor: statusObj.cor + "20", color: statusObj.cor } : {}
   }
 
+  const handleEditOS = (ordem: OrdemServico) => {
+    setEditingOS(ordem)
+    // Logic to populate form with existing data would go here
+    toast({
+      title: "Funcionalidade em desenvolvimento",
+      description: "A edição de O.S. será implementada em breve."
+    })
+  }
+
+  const handleViewOS = (ordem: OrdemServico) => {
+    setViewingOS(ordem)
+    toast({
+      title: "Funcionalidade em desenvolvimento", 
+      description: "A visualização detalhada de O.S. será implementada em breve."
+    })
+  }
+
   if (showNewOS) {
     return (
       <div className="space-y-6">
@@ -230,7 +248,6 @@ const OrdensServico = () => {
           </CardHeader>
           
           <CardContent className="space-y-6 pt-6">
-            {/* Dados do Cliente */}
             <div className="space-y-4">
               <div>
                 <div className="flex gap-2 items-end">
@@ -255,16 +272,28 @@ const OrdensServico = () => {
                 
                 {showClienteSearch && (
                   <div className="mt-2 border rounded-lg p-3 bg-muted/50 max-h-48 overflow-y-auto">
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {clientes?.slice(0, 5).map((cliente) => (
                         <button
                           key={cliente.id}
                           type="button"
-                          className="w-full text-left p-2 hover:bg-background rounded text-sm"
+                          className="w-full text-left p-3 hover:bg-background rounded border border-border transition-colors"
                           onClick={() => selectCliente(cliente)}
                         >
-                          <p className="font-medium">{cliente.nome}</p>
-                          <p className="text-muted-foreground text-xs">{cliente.telefone}</p>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-semibold text-foreground">{cliente.nome}</p>
+                              <p className="text-sm text-muted-foreground">{cliente.telefone}</p>
+                              {cliente.cpf_cnpj && (
+                                <p className="text-xs text-muted-foreground">CPF/CNPJ: {cliente.cpf_cnpj}</p>
+                              )}
+                            </div>
+                            {cliente.endereco && (
+                              <p className="text-xs text-muted-foreground max-w-[200px]">
+                                {cliente.endereco.length > 30 ? cliente.endereco.substring(0, 30) + "..." : cliente.endereco}
+                              </p>
+                            )}
+                          </div>
                         </button>
                       ))}
                     </div>
@@ -304,7 +333,6 @@ const OrdensServico = () => {
                 />
               </div>
 
-              {/* Endereço dividido */}
               <div className="space-y-4">
                 <Label className="text-base font-semibold">Endereço</Label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -376,7 +404,6 @@ const OrdensServico = () => {
               </div>
             </div>
 
-            {/* Itens da OS */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">Itens da Ordem de Serviço</h3>
               
@@ -681,16 +708,30 @@ const OrdensServico = () => {
                   </div>
                   
                   <div className="flex items-center gap-4">
-                    <Badge style={getStatusColor(ordem.status_os?.nome)}>
-                      {ordem.status_os?.nome || "Sem Status"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        style={getStatusColor(ordem.status_os?.nome)}
+                        className="cursor-pointer"
+                        onClick={() => setQuickStatusOS(ordem)}
+                      >
+                        {ordem.status_os?.nome || "Sem Status"}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setQuickStatusOS(ordem)}
+                        className="p-1 h-6 w-6"
+                      >
+                        <Zap className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <p className="font-bold text-foreground">R$ {ordem.valor_final.toFixed(2)}</p>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleEditOS(ordem)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
-                        <Search className="h-4 w-4" />
+                      <Button variant="outline" size="sm" onClick={() => handleViewOS(ordem)}>
+                        <Eye className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -700,6 +741,12 @@ const OrdensServico = () => {
           </div>
         </CardContent>
       </Card>
+
+      <QuickStatusDialog
+        open={!!quickStatusOS}
+        onOpenChange={(open) => !open && setQuickStatusOS(null)}
+        ordem={quickStatusOS}
+      />
     </div>
   );
 };

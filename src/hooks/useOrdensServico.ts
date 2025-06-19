@@ -23,18 +23,24 @@ export const useOrdensServico = () => {
   })
 }
 
-export const useStatusOS = () => {
+export const useOrdemServicoById = (id: string) => {
   return useQuery({
-    queryKey: ["status-os"],
+    queryKey: ["ordem-servico", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("status_os")
-        .select("*")
-        .order("ordem")
+        .from("ordens_servico")
+        .select(`
+          *,
+          status_os (nome, cor),
+          os_itens (*)
+        `)
+        .eq("id", id)
+        .single()
       
       if (error) throw error
       return data
-    }
+    },
+    enabled: !!id
   })
 }
 
@@ -74,6 +80,38 @@ export const useCreateOrdemServico = () => {
     onError: (error) => {
       toast({
         title: "Erro ao criar O.S.",
+        description: error.message,
+        variant: "destructive"
+      })
+    }
+  })
+}
+
+export const useUpdateOrdemServico = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ id, ...updateData }: Partial<OrdemServico> & { id: string }) => {
+      const { data, error } = await supabase
+        .from("ordens_servico")
+        .update(updateData)
+        .eq("id", id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ordens-servico"] })
+      toast({
+        title: "O.S. atualizada com sucesso!",
+        description: "As informações da ordem de serviço foram atualizadas."
+      })
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao atualizar O.S.",
         description: error.message,
         variant: "destructive"
       })

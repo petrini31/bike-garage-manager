@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -68,6 +67,12 @@ const Estoque = () => {
 
   const handleStatusClick = (status: string) => {
     setStatusFilter(statusFilter === status ? "" : status)
+  }
+
+  const truncateSKU = (sku: string | null | undefined) => {
+    if (!sku) return "N/A"
+    if (sku.length <= 18) return sku
+    return sku.substring(0, 15) + "..."
   }
 
   if (isLoading) {
@@ -177,9 +182,12 @@ const Estoque = () => {
                         />
                       </div>
                     )}
-                    <div className="w-20 h-12 bg-brilliant-blue-100 dark:bg-brilliant-blue-900 rounded-lg flex items-center justify-center">
-                      <span className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300 text-xs text-center px-1">
-                        {produto.sku || produto.nome.substring(0, 3).toUpperCase()}
+                    <div className="w-32 h-12 bg-brilliant-blue-100 dark:bg-brilliant-blue-900 rounded-lg flex items-center justify-center px-2">
+                      <span 
+                        className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300 text-xs text-center break-all"
+                        title={produto.sku || produto.nome.substring(0, 3).toUpperCase()}
+                      >
+                        {truncateSKU(produto.sku) || produto.nome.substring(0, 3).toUpperCase()}
                       </span>
                     </div>
                     <div>
