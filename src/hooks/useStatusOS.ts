@@ -1,32 +1,32 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { Tag } from "@/types/database"
+import { StatusOS } from "@/types/database"
 import { toast } from "@/hooks/use-toast"
 
-export const useTags = () => {
+export const useStatusOS = () => {
   return useQuery({
-    queryKey: ["tags"],
+    queryKey: ["status-os"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("tags")
+        .from("status_os")
         .select("*")
-        .order("nome")
+        .order("ordem")
       
       if (error) throw error
-      return data as Tag[]
+      return data as StatusOS[]
     }
   })
 }
 
-export const useCreateTag = () => {
+export const useCreateStatusOS = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (tag: Omit<Tag, "id" | "created_at">) => {
+    mutationFn: async (status: Omit<StatusOS, "id" | "created_at">) => {
       const { data, error } = await supabase
-        .from("tags")
-        .insert(tag)
+        .from("status_os")
+        .insert(status)
         .select()
         .single()
       
@@ -34,15 +34,15 @@ export const useCreateTag = () => {
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tags"] })
+      queryClient.invalidateQueries({ queryKey: ["status-os"] })
       toast({
-        title: "Tag criada com sucesso!",
-        description: "A tag foi adicionada ao sistema."
+        title: "Status criado com sucesso!",
+        description: "O status foi adicionado ao sistema."
       })
     },
     onError: (error) => {
       toast({
-        title: "Erro ao criar tag",
+        title: "Erro ao criar status",
         description: error.message,
         variant: "destructive"
       })
@@ -50,14 +50,14 @@ export const useCreateTag = () => {
   })
 }
 
-export const useUpdateTag = () => {
+export const useUpdateStatusOS = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async ({ id, ...tag }: Partial<Tag> & { id: string }) => {
+    mutationFn: async ({ id, ...status }: Partial<StatusOS> & { id: string }) => {
       const { data, error } = await supabase
-        .from("tags")
-        .update(tag)
+        .from("status_os")
+        .update(status)
         .eq("id", id)
         .select()
         .single()
@@ -66,15 +66,15 @@ export const useUpdateTag = () => {
       return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tags"] })
+      queryClient.invalidateQueries({ queryKey: ["status-os"] })
       toast({
-        title: "Tag atualizada com sucesso!",
-        description: "As informações da tag foram atualizadas."
+        title: "Status atualizado com sucesso!",
+        description: "As informações do status foram atualizadas."
       })
     },
     onError: (error) => {
       toast({
-        title: "Erro ao atualizar tag",
+        title: "Erro ao atualizar status",
         description: error.message,
         variant: "destructive"
       })
@@ -82,28 +82,28 @@ export const useUpdateTag = () => {
   })
 }
 
-export const useDeleteTag = () => {
+export const useDeleteStatusOS = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("tags")
+        .from("status_os")
         .delete()
         .eq("id", id)
       
       if (error) throw error
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tags"] })
+      queryClient.invalidateQueries({ queryKey: ["status-os"] })
       toast({
-        title: "Tag excluída com sucesso!",
-        description: "A tag foi removida do sistema."
+        title: "Status excluído com sucesso!",
+        description: "O status foi removido do sistema."
       })
     },
     onError: (error) => {
       toast({
-        title: "Erro ao excluir tag",
+        title: "Erro ao excluir status",
         description: error.message,
         variant: "destructive"
       })
