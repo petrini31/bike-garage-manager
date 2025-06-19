@@ -1,98 +1,78 @@
 
-import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { Trash2 } from "lucide-react"
+import { useCreateCliente, useUpdateCliente } from "@/hooks/useClientes"
 import { Cliente } from "@/types/database"
-import { useCreateCliente, useUpdateCliente, useDeleteCliente } from "@/hooks/useClientes"
 
 interface ClienteDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  cliente?: Cliente | null
-  mode: "create" | "edit" | "view"
+  cliente?: Cliente
+  trigger: React.ReactNode
 }
 
-export function ClienteDialog({ open, onOpenChange, cliente, mode }: ClienteDialogProps) {
+export function ClienteDialog({ cliente, trigger }: ClienteDialogProps) {
+  const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState({
-    nome: "",
-    telefone: "",
-    email: "",
-    endereco: "",
-    cpf_cnpj: ""
+    nome: cliente?.nome || "",
+    telefone: cliente?.telefone || "",
+    email: cliente?.email || "",
+    endereco: cliente?.endereco || "",
+    cpf_cnpj: cliente?.cpf_cnpj || ""
   })
 
   const createCliente = useCreateCliente()
   const updateCliente = useUpdateCliente()
-  const deleteCliente = useDeleteCliente()
 
-  useEffect(() => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
     if (cliente) {
-      setFormData({
-        nome: cliente.nome || "",
-        telefone: cliente.telefone || "",
-        email: cliente.email || "",
-        endereco: cliente.endereco || "",
-        cpf_cnpj: cliente.cpf_cnpj || ""
-      })
+      updateCliente.mutate(
+        { id: cliente.id, ...formData },
+        {
+          onSuccess: () => {
+            setOpen(false)
+            setFormData({ nome: "", telefone: "", email: "", endereco: "", cpf_cnpj: "" })
+          }
+        }
+      )
     } else {
-      setFormData({
-        nome: "",
-        telefone: "",
-        email: "",
-        endereco: "",
-        cpf_cnpj: ""
-      })
-    }
-  }, [cliente])
-
-  const handleSave = () => {
-    if (mode === "create") {
-      createCliente.mutate(formData, {
-        onSuccess: () => onOpenChange(false)
-      })
-    } else if (mode === "edit" && cliente) {
-      updateCliente.mutate({ ...formData, id: cliente.id }, {
-        onSuccess: () => onOpenChange(false)
-      })
+      // Para novos clientes, não precisamos passar numero_cliente pois é gerado automaticamente
+      createCliente.mutate(
+        formData,
+        {
+          onSuccess: () => {
+            setOpen(false)
+            setFormData({ nome: "", telefone: "", email: "", endereco: "", cpf_cnpj: "" })
+          }
+        }
+      )
     }
   }
-
-  const handleDelete = () => {
-    if (cliente) {
-      deleteCliente.mutate(cliente.id, {
-        onSuccess: () => onOpenChange(false)
-      })
-    }
-  }
-
-  const isReadonly = mode === "view"
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {trigger}
+      </DialogTrigger>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" && "Novo Cliente"}
-            {mode === "edit" && "Editar Cliente"}
-            {mode === "view" && "Visualizar Cliente"}
+            {cliente ? "Editar Cliente" : "Novo Cliente"}
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="nome">Nome *</Label>
             <Input
               id="nome"
               value={formData.nome}
               onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-              readOnly={isReadonly}
+              required
             />
           </div>
-          
           <div>
             <Label htmlFor="telefone">Telefone</Label>
             <Input
@@ -100,10 +80,8 @@ export function ClienteDialog({ open, onOpenChange, cliente, mode }: ClienteDial
               value={formData.telefone}
               onChange={(e) => setFormData(prev => ({ ...prev, telefone: e.target.value }))}
               placeholder="(xx) xxxxx-xxxx"
-              readOnly={isReadonly}
             />
           </div>
-          
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -111,74 +89,37 @@ export function ClienteDialog({ open, onOpenChange, cliente, mode }: ClienteDial
               type="email"
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              readOnly={isReadonly}
             />
           </div>
-          
           <div>
             <Label htmlFor="endereco">Endereço</Label>
             <Input
               id="endereco"
               value={formData.endereco}
               onChange={(e) => setFormData(prev => ({ ...prev, endereco: e.target.value }))}
-              readOnly={isReadonly}
             />
           </div>
-          
           <div>
             <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
             <Input
               id="cpf_cnpj"
               value={formData.cpf_cnpj}
               onChange={(e) => setFormData(prev => ({ ...prev, cpf_cnpj: e.target.value }))}
-              readOnly={isReadonly}
             />
           </div>
-        </div>
-
-        <DialogFooter className="flex justify-between">
-          <div>
-            {mode === "edit" && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Excluir
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>
-                      Excluir
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
-          
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {mode === "view" ? "Fechar" : "Cancelar"}
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancelar
             </Button>
-            {(mode === "create" || mode === "edit") && (
-              <Button 
-                onClick={handleSave} 
-                disabled={!formData.nome || createCliente.isPending || updateCliente.isPending}
-                className="bg-brilliant-blue-600 hover:bg-brilliant-blue-700"
-              >
-                {mode === "create" ? "Criar" : "Salvar"}
-              </Button>
-            )}
+            <Button 
+              type="submit" 
+              disabled={createCliente.isPending || updateCliente.isPending}
+              className="bg-brilliant-blue-600 hover:bg-brilliant-blue-700"
+            >
+              {cliente ? "Atualizar" : "Criar"}
+            </Button>
           </div>
-        </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

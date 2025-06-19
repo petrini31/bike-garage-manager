@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Edit, Search, Plus, Filter, Calendar } from "lucide-react"
-import { useOrdensServico, useStatusOS, useCreateOrdemServico, useProdutos } from "@/hooks/useOrdensServico"
+import { useOrdensServico, useStatusOS, useCreateOrdemServico } from "@/hooks/useOrdensServico"
 import { useClientes } from "@/hooks/useClientes"
+import { useProdutos } from "@/hooks/useProdutos"
 import { toast } from "@/hooks/use-toast"
 import { OrdemServico, Cliente, Produto } from "@/types/database"
 
@@ -130,7 +131,7 @@ const OrdensServico = () => {
     createOS.mutate({ os: osData, itens: itensData }, {
       onSuccess: () => {
         setShowNewOS(false)
-        setOsItems([{ id: 1, quantity: 1, description: "", unitPrice: 0, discount: 0, total: 0 }])
+        setOsItems([{ id: 1, quantity: 1, description: "", unitPrice: 0, discount: 0, total: 0, tipo: "servico" }])
         setClienteData({ nome: "", telefone: "", endereco: "", cpf_cnpj: "" })
         setObservacoes("")
         setStatusId("")
