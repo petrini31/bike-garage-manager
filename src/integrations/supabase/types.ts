@@ -17,6 +17,7 @@ export type Database = {
           endereco: string | null
           id: string
           nome: string
+          numero_cliente: number
           telefone: string | null
           updated_at: string
         }
@@ -27,6 +28,7 @@ export type Database = {
           endereco?: string | null
           id?: string
           nome: string
+          numero_cliente?: number
           telefone?: string | null
           updated_at?: string
         }
@@ -37,6 +39,7 @@ export type Database = {
           endereco?: string | null
           id?: string
           nome?: string
+          numero_cliente?: number
           telefone?: string | null
           updated_at?: string
         }
@@ -80,6 +83,36 @@ export type Database = {
             columns: ["produto_id"]
             isOneToOne: false
             referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fornecedor_tags: {
+        Row: {
+          fornecedor_id: string
+          tag_id: string
+        }
+        Insert: {
+          fornecedor_id: string
+          tag_id: string
+        }
+        Update: {
+          fornecedor_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fornecedor_tags_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fornecedor_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
             referencedColumns: ["id"]
           },
         ]
@@ -273,6 +306,7 @@ export type Database = {
         Row: {
           codigo_barras: string | null
           created_at: string
+          estoque_minimo: number | null
           fornecedor_id: string | null
           foto_url: string | null
           id: string
@@ -283,11 +317,13 @@ export type Database = {
           quantidade: number
           sku: string | null
           status: string
+          tipo: string | null
           updated_at: string
         }
         Insert: {
           codigo_barras?: string | null
           created_at?: string
+          estoque_minimo?: number | null
           fornecedor_id?: string | null
           foto_url?: string | null
           id?: string
@@ -298,11 +334,13 @@ export type Database = {
           quantidade?: number
           sku?: string | null
           status?: string
+          tipo?: string | null
           updated_at?: string
         }
         Update: {
           codigo_barras?: string | null
           created_at?: string
+          estoque_minimo?: number | null
           fornecedor_id?: string | null
           foto_url?: string | null
           id?: string
@@ -313,6 +351,7 @@ export type Database = {
           quantidade?: number
           sku?: string | null
           status?: string
+          tipo?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -367,6 +406,45 @@ export type Database = {
           created_at?: string
           id?: string
           nome?: string
+        }
+        Relationships: []
+      }
+      usuarios: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string
+          id: string
+          login: string
+          nome: string
+          senha_hash: string
+          telefone: string | null
+          updated_at: string
+          user_type: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          login: string
+          nome: string
+          senha_hash: string
+          telefone?: string | null
+          updated_at?: string
+          user_type: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          login?: string
+          nome?: string
+          senha_hash?: string
+          telefone?: string | null
+          updated_at?: string
+          user_type?: string
         }
         Relationships: []
       }

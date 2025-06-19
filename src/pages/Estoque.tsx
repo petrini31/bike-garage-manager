@@ -4,15 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Edit, Eye, Plus } from "lucide-react"
+import { Search, Edit, Eye, Plus, Tags } from "lucide-react"
 import { useProdutos } from "@/hooks/useProdutos"
 import { ProdutoDialog } from "@/components/dialogs/ProdutoDialog"
+import { TagDialog } from "@/components/dialogs/TagDialog"
 import { Produto } from "@/types/database"
 
 const Estoque = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [tagDialogOpen, setTagDialogOpen] = useState(false)
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null)
   const [dialogMode, setDialogMode] = useState<"create" | "edit" | "view">("create")
 
@@ -79,10 +81,16 @@ const Estoque = () => {
           <h1 className="text-3xl font-bold text-foreground">Controle de Estoque</h1>
           <p className="text-muted-foreground">Gerencie peças e acessórios</p>
         </div>
-        <Button onClick={handleNewProduto} className="bg-brilliant-blue-600 hover:bg-brilliant-blue-700">
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Item
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setTagDialogOpen(true)} variant="outline" className="border-brilliant-blue-600 text-brilliant-blue-600 hover:bg-brilliant-blue-50">
+            <Tags className="mr-2 h-4 w-4" />
+            Gerenciar Tags
+          </Button>
+          <Button onClick={handleNewProduto} className="bg-brilliant-blue-600 hover:bg-brilliant-blue-700">
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Item
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -160,8 +168,17 @@ const Estoque = () => {
               filteredProdutos.map((produto) => (
                 <div key={produto.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-brilliant-blue-100 dark:bg-brilliant-blue-900 rounded-lg flex items-center justify-center">
-                      <span className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300 text-xs">
+                    {produto.foto_url && (
+                      <div className="w-12 h-12 rounded-lg overflow-hidden">
+                        <img 
+                          src={produto.foto_url} 
+                          alt={produto.nome}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="w-20 h-12 bg-brilliant-blue-100 dark:bg-brilliant-blue-900 rounded-lg flex items-center justify-center">
+                      <span className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300 text-xs text-center px-1">
                         {produto.sku || produto.nome.substring(0, 3).toUpperCase()}
                       </span>
                     </div>
@@ -172,6 +189,19 @@ const Estoque = () => {
                         <span>Compra: R$ {produto.preco_compra?.toFixed(2) || "0,00"}</span>
                         <span>Venda: R$ {produto.preco_venda?.toFixed(2) || "0,00"}</span>
                       </div>
+                      {produto.tags && produto.tags.length > 0 && (
+                        <div className="flex gap-1 mt-1">
+                          {produto.tags.map((tag) => (
+                            <Badge 
+                              key={tag.id} 
+                              style={{ backgroundColor: tag.cor + "20", color: tag.cor }}
+                              className="text-xs"
+                            >
+                              #{tag.nome}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -179,6 +209,9 @@ const Estoque = () => {
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground">Quantidade</p>
                       <p className="font-bold text-foreground text-lg">{produto.quantidade}</p>
+                      {produto.estoque_minimo && (
+                        <p className="text-xs text-muted-foreground">Min: {produto.estoque_minimo}</p>
+                      )}
                     </div>
                     <Badge 
                       className={`${getStatusColor(produto.status)} cursor-pointer`}
@@ -207,6 +240,11 @@ const Estoque = () => {
         onOpenChange={setDialogOpen}
         produto={selectedProduto}
         mode={dialogMode}
+      />
+
+      <TagDialog
+        open={tagDialogOpen}
+        onOpenChange={setTagDialogOpen}
       />
     </div>
   );

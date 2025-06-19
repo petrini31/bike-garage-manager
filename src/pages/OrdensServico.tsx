@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,10 +7,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Edit, Search, Plus, Filter, Calendar } from "lucide-react"
-import { useOrdensServico, useStatusOS, useCreateOrdemServico } from "@/hooks/useOrdensServico"
+import { useOrdensServico, useStatusOS, useCreateOrdemServico, useProdutos } from "@/hooks/useOrdensServico"
 import { useClientes } from "@/hooks/useClientes"
 import { toast } from "@/hooks/use-toast"
-import { OrdemServico } from "@/types/database"
+import { OrdemServico, Cliente, Produto } from "@/types/database"
 
 const OrdensServico = () => {
   const [showNewOS, setShowNewOS] = useState(false)
@@ -20,9 +19,10 @@ const OrdensServico = () => {
   const [dateFilter, setDateFilter] = useState("")
   const [priceFilter, setPriceFilter] = useState("")
   const [showFilters, setShowFilters] = useState(false)
+  const [showClienteSearch, setShowClienteSearch] = useState(false)
   
   const [osItems, setOsItems] = useState([
-    { id: 1, quantity: 1, description: "", unitPrice: 0, discount: 0, total: 0 }
+    { id: 1, quantity: 1, description: "", unitPrice: 0, discount: 0, total: 0, tipo: "servico" }
   ])
   
   const [clienteData, setClienteData] = useState({
@@ -38,6 +38,7 @@ const OrdensServico = () => {
   const { data: ordensServico, isLoading } = useOrdensServico()
   const { data: statusList } = useStatusOS()
   const { data: clientes } = useClientes()
+  const { data: produtos } = useProdutos()
   const createOS = useCreateOrdemServico()
 
   const filteredOrdens = ordensServico?.filter(ordem => {
@@ -64,7 +65,8 @@ const OrdensServico = () => {
       description: "",
       unitPrice: 0,
       discount: 0,
-      total: 0
+      total: 0,
+      tipo: "servico"
     }
     setOsItems([...osItems, newItem])
   }
@@ -80,6 +82,22 @@ const OrdensServico = () => {
       }
       return item
     }))
+  }
+
+  const selectCliente = (cliente: Cliente) => {
+    setClienteData({
+      nome: cliente.nome,
+      telefone: cliente.telefone || "",
+      endereco: cliente.endereco || "",
+      cpf_cnpj: cliente.cpf_cnpj || ""
+    })
+    setShowClienteSearch(false)
+  }
+
+  const selectProduto = (itemId: number, produto: Produto) => {
+    updateItem(itemId, 'description', produto.nome)
+    updateItem(itemId, 'unitPrice', produto.preco_venda || 0)
+    updateItem(itemId, 'tipo', 'produto')
   }
 
   const calculateTotal = () => {
@@ -155,14 +173,52 @@ const OrdensServico = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="cliente">Nome do Cliente *</Label>
-                  <Input 
-                    id="cliente" 
-                    placeholder="Digite o nome do cliente"
-                    value={clienteData.nome}
-                    onChange={(e) => setClienteData(prev => ({ ...prev, nome: e.target.value }))}
-                  />
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <Label htmlFor="cliente">Nome do Cliente *</Label>
+                      <Input 
+                        id="cliente" 
+                        placeholder="Digite o nome do cliente"
+                        value={clienteData.nome}
+                        onChange={(e) => setClienteData(prev => ({ ...prev, nome: e.target.value }))}
+                      />
+                    </div>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      onClick={() => setShowClienteSearch(!showClienteSearch)}
+                      className="mb-0"
+                    >
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {showClienteSearch && (
+                    <div className="mt-2 border rounded-lg p-3 bg-muted/50 max-h-48 overflow-y-auto">
+                      <Input 
+                        placeholder="Buscar cliente..."
+                        className="mb-2"
+                        onChange={(e) => {
+                          // Filtrar clientes conforme digitação
+                        }}
+                      />
+                      <div className="space-y-1">
+                        {clientes?.slice(0, 5).map((cliente) => (
+                          <button
+                            key={cliente.id}
+                            type="button"
+                            className="w-full text-left p-2 hover:bg-background rounded text-sm"
+                            onClick={() => selectCliente(cliente)}
+                          >
+                            <p className="font-medium">{cliente.nome}</p>
+                            <p className="text-muted-foreground text-xs">{cliente.telefone}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+                
                 <div>
                   <Label htmlFor="endereco">Endereço</Label>
                   <Input 
@@ -219,6 +275,7 @@ const OrdensServico = () => {
                   <thead>
                     <tr className="bg-muted">
                       <th className="border border-border p-2 text-left">#</th>
+                      <th className="border border-border p-2 text-left">Tipo</th>
                       <th className="border border-border p-2 text-left">Qtd</th>
                       <th className="border border-border p-2 text-left">Descrição</th>
                       <th className="border border-border p-2 text-left">Preço Unit. (R$)</th>
@@ -233,6 +290,17 @@ const OrdensServico = () => {
                           {String(item.id).padStart(3, '0')}
                         </td>
                         <td className="border border-border p-2">
+                          <Select value={item.tipo} onValueChange={(value) => updateItem(item.id, 'tipo', value)}>
+                            <SelectTrigger className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="produto">Produto</SelectItem>
+                              <SelectItem value="servico">Serviço</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="border border-border p-2">
                           <Input
                             type="number"
                             value={item.quantity}
@@ -242,12 +310,26 @@ const OrdensServico = () => {
                           />
                         </td>
                         <td className="border border-border p-2">
-                          <Input
-                            value={item.description}
-                            onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                            placeholder="Descrição do item/serviço"
-                            className="min-w-[200px]"
-                          />
+                          <div className="flex gap-1">
+                            <Input
+                              value={item.description}
+                              onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                              placeholder={item.tipo === 'produto' ? "Nome do produto" : "Descrição do serviço"}
+                              className="min-w-[200px]"
+                            />
+                            {item.tipo === 'produto' && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  // Abrir modal de seleção de produtos
+                                }}
+                              >
+                                <Search className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         </td>
                         <td className="border border-border p-2">
                           <Input
@@ -279,7 +361,10 @@ const OrdensServico = () => {
               </div>
 
               <div className="flex justify-between items-center">
-                <Button onClick={addItem} variant="outline">
+                <Button 
+                  onClick={addItem} 
+                  className="bg-brilliant-blue-600 hover:bg-brilliant-blue-700"
+                >
                   Adicionar Item
                 </Button>
                 <div className="text-right">
@@ -434,8 +519,8 @@ const OrdensServico = () => {
                     </div>
                     <div>
                       <p className="font-semibold text-foreground">{ordem.cliente_nome}</p>
-                      <p className="text-sm text-muted-foreground">{ordem.cliente_telefone}</p>
-                      <p className="text-xs text-muted-foreground font-medium">
+                      <p className="text-lg font-bold text-brilliant-blue-600">{ordem.cliente_telefone}</p>
+                      <p className="text-sm font-bold text-muted-foreground bg-muted px-2 py-1 rounded">
                         <Calendar className="inline h-3 w-3 mr-1" />
                         {new Date(ordem.created_at).toLocaleDateString('pt-BR')}
                       </p>

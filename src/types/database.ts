@@ -1,6 +1,7 @@
 
 export interface Cliente {
   id: string
+  numero_cliente: number
   nome: string
   telefone?: string
   email?: string
@@ -62,6 +63,7 @@ export interface Fornecedor {
   ativo: boolean
   created_at: string
   updated_at: string
+  tags?: Tag[]
 }
 
 export interface Tag {
@@ -77,14 +79,29 @@ export interface Produto {
   sku?: string
   codigo_barras?: string
   quantidade: number
+  estoque_minimo?: number
   preco_compra?: number
   preco_venda?: number
   lucro?: number
   foto_url?: string
   status: string
+  tipo?: string
   fornecedor_id?: string
   created_at: string
   updated_at: string
   fornecedores?: Fornecedor
   tags?: Tag[]
+}
+
+export interface Usuario {
+  id: string
+  nome: string
+  email: string
+  telefone?: string
+  login: string
+  senha_hash: string
+  user_type: 'administrador master' | 'administrador' | 'mecanico'
+  ativo: boolean
+  created_at: string
+  updated_at: string
 }

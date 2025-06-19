@@ -20,7 +20,8 @@ const Clientes = () => {
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.telefone?.includes(searchTerm) ||
     cliente.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.cpf_cnpj?.includes(searchTerm)
+    cliente.cpf_cnpj?.includes(searchTerm) ||
+    cliente.numero_cliente?.toString().includes(searchTerm)
   ) || []
 
   const handleNewCliente = () => {
@@ -83,14 +84,14 @@ const Clientes = () => {
               filteredClientes.map((cliente) => (
                 <div key={cliente.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-brilliant-blue-100 dark:bg-brilliant-blue-900 rounded-full flex items-center justify-center">
-                      <span className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300">
-                        {cliente.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                    <div className="w-16 h-12 bg-brilliant-blue-100 dark:bg-brilliant-blue-900 rounded-lg flex items-center justify-center">
+                      <span className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300 text-xs">
+                        {String(cliente.numero_cliente).padStart(5, '0')}
                       </span>
                     </div>
                     <div>
                       <p className="font-semibold text-foreground">{cliente.nome}</p>
-                      <p className="text-sm text-muted-foreground">{cliente.telefone}</p>
+                      <p className="text-lg font-bold text-brilliant-blue-600">{cliente.telefone}</p>
                       <p className="text-sm text-muted-foreground">{cliente.email}</p>
                     </div>
                   </div>
@@ -98,7 +99,7 @@ const Clientes = () => {
                   <div className="flex items-center gap-6">
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground">CPF/CNPJ</p>
-                      <p className="font-bold text-foreground">{cliente.cpf_cnpj || "N/A"}</p>
+                      <p className="font-medium text-foreground">{cliente.cpf_cnpj || "N/A"}</p>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => handleEditCliente(cliente)}>
