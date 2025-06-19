@@ -10,9 +10,6 @@ import { Cliente } from "@/types/database"
 
 const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState("")
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null)
-  const [dialogMode, setDialogMode] = useState<"create" | "edit" | "view">("create")
 
   const { data: clientes, isLoading } = useClientes()
 
@@ -23,24 +20,6 @@ const Clientes = () => {
     cliente.cpf_cnpj?.includes(searchTerm) ||
     cliente.numero_cliente?.toString().includes(searchTerm)
   ) || []
-
-  const handleNewCliente = () => {
-    setSelectedCliente(null)
-    setDialogMode("create")
-    setDialogOpen(true)
-  }
-
-  const handleEditCliente = (cliente: Cliente) => {
-    setSelectedCliente(cliente)
-    setDialogMode("edit")
-    setDialogOpen(true)
-  }
-
-  const handleViewCliente = (cliente: Cliente) => {
-    setSelectedCliente(cliente)
-    setDialogMode("view")
-    setDialogOpen(true)
-  }
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-64">Carregando clientes...</div>
@@ -53,10 +32,14 @@ const Clientes = () => {
           <h1 className="text-3xl font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground">Gerencie sua base de clientes</p>
         </div>
-        <Button onClick={handleNewCliente} className="bg-brilliant-blue-600 hover:bg-brilliant-blue-700">
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Cliente
-        </Button>
+        <ClienteDialog
+          trigger={
+            <Button className="bg-brilliant-blue-600 hover:bg-brilliant-blue-700">
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Cliente
+            </Button>
+          }
+        />
       </div>
 
       <Card className="border-border">
@@ -102,12 +85,24 @@ const Clientes = () => {
                       <p className="font-medium text-foreground">{cliente.cpf_cnpj || "N/A"}</p>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEditCliente(cliente)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleViewCliente(cliente)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <ClienteDialog
+                        cliente={cliente}
+                        mode="edit"
+                        trigger={
+                          <Button variant="outline" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
+                      <ClienteDialog
+                        cliente={cliente}
+                        mode="view"
+                        trigger={
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
                     </div>
                   </div>
                 </div>
@@ -116,13 +111,6 @@ const Clientes = () => {
           </div>
         </CardContent>
       </Card>
-
-      <ClienteDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        cliente={selectedCliente}
-        mode={dialogMode}
-      />
     </div>
   );
 };
