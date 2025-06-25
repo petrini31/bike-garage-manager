@@ -65,7 +65,7 @@ export const useUpdateProduto = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async ({ id, ...produto }: Partial<Produto> & { id: string }) => {
+    mutationFn: async ({ id, tags, ...produto }: Partial<Produto> & { id: string, tags?: string[] }) => {
       const { data, error } = await supabase
         .from("produtos")
         .update(produto)
@@ -74,6 +74,30 @@ export const useUpdateProduto = () => {
         .single()
       
       if (error) throw error
+      
+      // Handle tags if provided
+      if (tags !== undefined) {
+        // Remove existing tags
+        await supabase
+          .from("produto_tags")
+          .delete()
+          .eq("produto_id", id)
+        
+        // Add new tags
+        if (tags.length > 0) {
+          const tagRelations = tags.map(tagId => ({
+            produto_id: id,
+            tag_id: tagId
+          }))
+          
+          const { error: tagsError } = await supabase
+            .from("produto_tags")
+            .insert(tagRelations)
+          
+          if (tagsError) throw tagsError
+        }
+      }
+      
       return data
     },
     onSuccess: () => {

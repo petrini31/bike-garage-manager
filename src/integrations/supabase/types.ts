@@ -159,6 +159,72 @@ export type Database = {
         }
         Relationships: []
       }
+      gastos: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          recorrente: boolean | null
+          status: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          recorrente?: boolean | null
+          status?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          recorrente?: boolean | null
+          status?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      metas_faturamento: {
+        Row: {
+          created_at: string
+          id: string
+          meta_anual: number
+          meta_mensal: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta_anual?: number
+          meta_mensal?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta_anual?: number
+          meta_mensal?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ordens_servico: {
         Row: {
           cliente_cpf_cnpj: string | null

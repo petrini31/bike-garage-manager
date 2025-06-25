@@ -1,12 +1,30 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { TrendingUp, TrendingDown, DollarSign, Calendar, BarChart3 } from "lucide-react"
+import { TrendingUp, TrendingDown, DollarSign, Calendar, BarChart3, Plus, Edit } from "lucide-react"
+import { useOrdensServico } from "@/hooks/useOrdensServico"
+import { useGastos } from "@/hooks/useGastos"
+import { useMetasFaturamento } from "@/hooks/useMetasFaturamento"
+import { GastoDialog } from "@/components/dialogs/GastoDialog"
 
 const Faturamento = () => {
   const [periodo, setPeriodo] = useState("mes")
+
+  const [gastoDialogOpen, setGastoDialogOpen] = useState(false)
+  const [selectedGasto, setSelectedGasto] = useState(null)
+
+  const { data: gastos } = useGastos()
+  const { data: metas } = useMetasFaturamento()
+  const { data: ordensServico } = useOrdensServico()
+
+  // Calculate real revenue from finalized orders
+  const faturamentoReal = ordensServico
+    ?.filter(os => os.status_os?.nome === "Finalizada")
+    ?.reduce((total, os) => total + os.valor_final, 0) || 0
+
+  const totalGastos = gastos?.reduce((total, gasto) => total + gasto.valor, 0) || 0
+  const lucroLiquido = faturamentoReal - totalGastos
 
   // Dados mockados para demonstração
   const faturamentoAtual = 15750.00
@@ -66,6 +84,17 @@ const Faturamento = () => {
           <p className="text-muted-foreground">Análise financeira detalhada</p>
         </div>
         <div className="flex items-center gap-4">
+          <Button
+            onClick={() => {
+              setSelectedGasto(null)
+              setGastoDialogOpen(true)
+            }}
+            variant="outline"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Gasto
+          </Button>
+          
           <Select value={periodo} onValueChange={setPeriodo}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Período" />
@@ -81,20 +110,20 @@ const Faturamento = () => {
       </div>
 
       {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Faturamento Atual
+              Faturamento Real
             </CardTitle>
             <DollarSign className="h-4 w-4 text-brilliant-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-brilliant-blue-600">
-              R$ {faturamentoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {faturamentoReal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Período selecionado
+              O.S. Finalizadas
             </p>
           </CardContent>
         </Card>
@@ -102,16 +131,16 @@ const Faturamento = () => {
         <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Período Anterior
+              Total de Gastos
             </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              R$ {faturamentoAnterior.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            <div className="text-2xl font-bold text-red-600">
+              R$ {totalGastos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Comparativo
+              Despesas totais
             </p>
           </CardContent>
         </Card>
@@ -119,19 +148,19 @@ const Faturamento = () => {
         <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Variação
+              Lucro Líquido
             </CardTitle>
-            {variacao >= 0 ? 
+            {lucroLiquido >= 0 ? 
               <TrendingUp className="h-4 w-4 text-green-600" /> : 
               <TrendingDown className="h-4 w-4 text-red-600" />
             }
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${variacao >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {variacao >= 0 ? '+' : ''}{variacao.toFixed(1)}%
+            <div className={`text-2xl font-bold ${lucroLiquido >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              R$ {lucroLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Em relação ao anterior
+              Receita - Despesas
             </p>
           </CardContent>
         </Card>
@@ -139,16 +168,33 @@ const Faturamento = () => {
         <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Média do Período
+              Meta Mensal
             </CardTitle>
-            <BarChart3 className="h-4 w-4 text-orange-600" />
+            <Calendar className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              R$ {(dadosAtuais.reduce((acc, d) => acc + d.valor, 0) / dadosAtuais.length).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {(metas?.meta_mensal || 18000).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Valor médio
+              Meta definida
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Atingimento da Meta
+            </CardTitle>
+            <BarChart3 className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">
+              {((faturamentoReal / (metas?.meta_mensal || 18000)) * 100).toFixed(1)}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Da meta mensal
             </p>
           </CardContent>
         </Card>
@@ -179,32 +225,53 @@ const Faturamento = () => {
         </CardContent>
       </Card>
 
-      {/* Detalhamento por Categoria */}
+      {/* Gastos e Metas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Faturamento por Categoria</CardTitle>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle className="text-foreground">Gastos Recentes</CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setSelectedGasto(null)
+                setGastoDialogOpen(true)
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { categoria: "Serviços", valor: 8900, percentual: 56.5 },
-                { categoria: "Peças e Acessórios", valor: 4850, percentual: 30.8 },
-                { categoria: "Manutenção Preventiva", valor: 2000, percentual: 12.7 }
-              ].map((item) => (
-                <div key={item.categoria} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-brilliant-blue-500 rounded-full" />
-                    <span className="text-sm font-medium text-foreground">{item.categoria}</span>
+              {gastos?.slice(0, 5).map((gasto) => (
+                <div key={gasto.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="font-medium text-foreground">{gasto.nome}</div>
+                    <div className="text-sm text-muted-foreground">{gasto.categoria}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-bold text-foreground">
-                      R$ {item.valor.toLocaleString('pt-BR')}
+                    <div className="font-bold text-red-600">
+                      R$ {gasto.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {item.percentual}%
+                    <div className={`text-xs px-2 py-1 rounded ${
+                      gasto.status === 'Pago' ? 'bg-green-100 text-green-700' :
+                      gasto.status === 'Vencido' ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {gasto.status}
                     </div>
                   </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setSelectedGasto(gasto)
+                      setGastoDialogOpen(true)
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
             </div>
@@ -220,32 +287,42 @@ const Faturamento = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Meta Mensal</span>
-                  <span className="text-sm font-medium text-foreground">R$ 18.000,00</span>
+                  <span className="text-sm font-medium text-foreground">
+                    R$ {(metas?.meta_mensal || 18000).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div 
                     className="h-2 bg-brilliant-blue-500 rounded-full transition-all duration-500"
-                    style={{ width: `${(faturamentoAtual / 18000) * 100}%` }}
+                    style={{ width: `${Math.min((faturamentoReal / (metas?.meta_mensal || 18000)) * 100, 100)}%` }}
                   />
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {((faturamentoAtual / 18000) * 100).toFixed(1)}% da meta atingida
+                  {((faturamentoReal / (metas?.meta_mensal || 18000)) * 100).toFixed(1)}% da meta atingida
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Projeção do Mês</span>
-                  <span className="text-sm font-medium text-green-600">R$ 16.200,00</span>
+                  <span className="text-sm text-muted-foreground">Meta Anual</span>
+                  <span className="text-sm font-medium text-foreground">
+                    R$ {(metas?.meta_anual || 216000).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground">
                   Baseado na performance atual
-                </p>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <GastoDialog
+        open={gastoDialogOpen}
+        onOpenChange={setGastoDialogOpen}
+        gasto={selectedGasto}
+      />
     </div>
   );
 };

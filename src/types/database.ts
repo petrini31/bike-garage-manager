@@ -1,4 +1,3 @@
-
 export interface Cliente {
   id: string
   numero_cliente: number
@@ -102,6 +101,28 @@ export interface Usuario {
   senha_hash: string
   user_type: 'administrador master' | 'administrador' | 'mecanico'
   ativo: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Gasto {
+  id: string
+  nome: string
+  descricao?: string
+  valor: number
+  data_vencimento?: string
+  data_pagamento?: string
+  categoria: string
+  status: 'Pendente' | 'Pago' | 'Vencido'
+  recorrente?: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface MetaFaturamento {
+  id: string
+  meta_mensal: number
+  meta_anual: number
   created_at: string
   updated_at: string
 }
