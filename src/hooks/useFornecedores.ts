@@ -12,12 +12,20 @@ export const useFornecedores = () => {
         .from("fornecedores")
         .select(`
           *,
-          tags (id, nome, cor)
+          fornecedor_tags (
+            tag_id,
+            tags (id, nome, cor)
+          )
         `)
         .order("nome")
       
       if (error) throw error
-      return data as Fornecedor[]
+      
+      // Transform the data to match the expected structure
+      return data.map(fornecedor => ({
+        ...fornecedor,
+        tags: fornecedor.fornecedor_tags?.map(ft => ft.tags).filter(Boolean) || []
+      })) as Fornecedor[]
     }
   })
 }

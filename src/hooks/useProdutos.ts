@@ -13,13 +13,42 @@ export const useProdutos = () => {
         .select(`
           *,
           fornecedores (nome),
-          tags (id, nome, cor)
+          produto_tags (
+            tag_id,
+            tags (id, nome, cor)
+          )
         `)
         .order("nome")
       
       if (error) throw error
-      return data as Produto[]
+      
+      // Transform the data to match the expected structure
+      return data.map(produto => ({
+        ...produto,
+        tags: produto.produto_tags?.map(pt => pt.tags).filter(Boolean) || []
+      })) as Produto[]
     }
+  })
+}
+
+export const useProdutosByTag = (tagId: string) => {
+  return useQuery({
+    queryKey: ["produtos-by-tag", tagId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select(`
+          *,
+          fornecedores (nome),
+          produto_tags!inner (tag_id)
+        `)
+        .eq("produto_tags.tag_id", tagId)
+        .order("nome")
+      
+      if (error) throw error
+      return data as Produto[]
+    },
+    enabled: !!tagId
   })
 }
 
@@ -46,6 +75,7 @@ export const useCreateProduto = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] })
+      queryClient.invalidateQueries({ queryKey: ["produtos-by-tag"] })
       toast({
         title: "Produto criado com sucesso!",
         description: "O produto foi adicionado ao estoque."
@@ -102,6 +132,7 @@ export const useUpdateProduto = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] })
+      queryClient.invalidateQueries({ queryKey: ["produtos-by-tag"] })
       toast({
         title: "Produto atualizado com sucesso!",
         description: "As informações do produto foram atualizadas."
@@ -131,6 +162,7 @@ export const useDeleteProduto = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] })
+      queryClient.invalidateQueries({ queryKey: ["produtos-by-tag"] })
       toast({
         title: "Produto excluído com sucesso!",
         description: "O produto foi removido do estoque."
