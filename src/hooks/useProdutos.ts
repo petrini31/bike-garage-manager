@@ -12,43 +12,23 @@ export const useProdutos = () => {
         .from("produtos")
         .select(`
           *,
-          fornecedores (id, nome, cnpj, ativo, created_at, updated_at),
+          fornecedores (
+            nome
+          ),
           produto_tags (
             tag_id,
-            tags (id, nome, cor, created_at)
+            tags (
+              id,
+              nome,
+              cor
+            )
           )
         `)
         .order("nome")
       
       if (error) throw error
-      
-      // Transform the data to match the expected structure with correct types
-      return data.map(produto => ({
-        ...produto,
-        tags: produto.produto_tags?.map(pt => pt.tags).filter(Boolean) || []
-      })) as Produto[]
-    }
-  })
-}
-
-export const useProdutosByTag = (tagId: string) => {
-  return useQuery({
-    queryKey: ["produtos-by-tag", tagId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("produtos")
-        .select(`
-          *,
-          fornecedores (id, nome, cnpj, ativo, created_at, updated_at),
-          produto_tags!inner (tag_id)
-        `)
-        .eq("produto_tags.tag_id", tagId)
-        .order("nome")
-      
-      if (error) throw error
       return data as Produto[]
-    },
-    enabled: !!tagId
+    }
   })
 }
 
@@ -56,26 +36,36 @@ export const useCreateProduto = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (produto: Omit<Produto, "id" | "created_at" | "updated_at" | "lucro" | "tags">) => {
-      // Gerar SKU se não fornecido
-      if (!produto.sku) {
-        const sku = produto.nome.substring(0, 3).toUpperCase() + 
-                   (produto.codigo_barras ? produto.codigo_barras.substring(-4) : Math.random().toString(36).substring(2, 6).toUpperCase())
-        produto.sku = sku
+    mutationFn: async ({ produto, tags }: { produto: Omit<Produto, "id" | "created_at" | "updated_at">, tags: string[] }) => {
+      if (produto.preco_compra && produto.preco_venda) {
+        produto.lucro = produto.preco_venda - produto.preco_compra
       }
       
-      const { data, error } = await supabase
+      const { data: produtoData, error: produtoError } = await supabase
         .from("produtos")
         .insert(produto)
         .select()
         .single()
       
-      if (error) throw error
-      return data
+      if (produtoError) throw produtoError
+      
+      if (tags && tags.length > 0) {
+        const tagRelations = tags.map(tagId => ({
+          produto_id: produtoData.id,
+          tag_id: tagId
+        }))
+        
+        const { error: tagError } = await supabase
+          .from("produto_tags")
+          .insert(tagRelations)
+        
+        if (tagError) throw tagError
+      }
+      
+      return produtoData
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] })
-      queryClient.invalidateQueries({ queryKey: ["produtos-by-tag"] })
       toast({
         title: "Produto criado com sucesso!",
         description: "O produto foi adicionado ao estoque."
@@ -95,44 +85,42 @@ export const useUpdateProduto = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async ({ id, tags, ...produto }: Partial<Produto> & { id: string, tags?: string[] }) => {
-      const { data, error } = await supabase
+    mutationFn: async ({ id, produto, tags }: { id: string, produto: Partial<Produto>, tags: string[] }) => {
+      if (produto.preco_compra && produto.preco_venda) {
+        produto.lucro = produto.preco_venda - produto.preco_compra
+      }
+      
+      const { data: produtoData, error: produtoError } = await supabase
         .from("produtos")
         .update(produto)
         .eq("id", id)
         .select()
         .single()
       
-      if (error) throw error
+      if (produtoError) throw produtoError
       
-      // Handle tags if provided
-      if (tags !== undefined) {
-        // Remove existing tags
-        await supabase
-          .from("produto_tags")
-          .delete()
-          .eq("produto_id", id)
+      await supabase
+        .from("produto_tags")
+        .delete()
+        .eq("produto_id", id)
+      
+      if (tags && tags.length > 0) {
+        const tagRelations = tags.map(tagId => ({
+          produto_id: id,
+          tag_id: tagId
+        }))
         
-        // Add new tags
-        if (tags.length > 0) {
-          const tagRelations = tags.map(tagId => ({
-            produto_id: id,
-            tag_id: tagId
-          }))
-          
-          const { error: tagsError } = await supabase
-            .from("produto_tags")
-            .insert(tagRelations)
-          
-          if (tagsError) throw tagsError
-        }
+        const { error: tagError } = await supabase
+          .from("produto_tags")
+          .insert(tagRelations)
+        
+        if (tagError) throw tagError
       }
       
-      return data
+      return produtoData
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] })
-      queryClient.invalidateQueries({ queryKey: ["produtos-by-tag"] })
       toast({
         title: "Produto atualizado com sucesso!",
         description: "As informações do produto foram atualizadas."
@@ -162,7 +150,6 @@ export const useDeleteProduto = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] })
-      queryClient.invalidateQueries({ queryKey: ["produtos-by-tag"] })
       toast({
         title: "Produto excluído com sucesso!",
         description: "O produto foi removido do estoque."

@@ -48,10 +48,14 @@ const OrdensServico = () => {
   const filteredOrdens = ordens?.filter((ordem) => {
     const searchRegex = new RegExp(searchTerm, "i")
     
-    const clienteMatch = clienteFilter ? ordem.cliente_nome && new RegExp(clienteFilter, "i").test(ordem.cliente_nome) : true
-    const statusMatch = statusFilter ? ordem.status_id === statusFilter : true
+    const clienteMatch = clienteFilter && clienteFilter !== "todos" ? 
+      ordem.cliente_nome && new RegExp(clienteFilter, "i").test(ordem.cliente_nome) : true
+    const statusMatch = statusFilter && statusFilter !== "todos" ? 
+      ordem.status_id === statusFilter : true
     
-    const searchMatch = (ordem.cliente_nome && searchRegex.test(ordem.cliente_nome)) || (ordem.numero_os && searchRegex.test(ordem.numero_os.toString()))
+    const searchMatch = !searchTerm || 
+      (ordem.cliente_nome && searchRegex.test(ordem.cliente_nome)) || 
+      (ordem.numero_os && searchRegex.test(ordem.numero_os.toString()))
     
     return searchMatch && clienteMatch && statusMatch
   })
@@ -93,7 +97,7 @@ const OrdensServico = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os clientes</SelectItem>
-            {clientes?.filter(cliente => cliente.nome && cliente.nome.trim() !== "").map((cliente) => (
+            {clientes?.filter(cliente => cliente.nome?.trim()).map((cliente) => (
               <SelectItem key={cliente.id} value={cliente.nome}>
                 {cliente.nome}
               </SelectItem>
@@ -106,7 +110,7 @@ const OrdensServico = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os status</SelectItem>
-            {statusList?.filter(status => status.id && status.nome && status.nome.trim() !== "").map((status) => (
+            {statusList?.filter(status => status.id && status.nome?.trim()).map((status) => (
               <SelectItem key={status.id} value={status.id}>
                 {status.nome}
               </SelectItem>
@@ -122,15 +126,14 @@ const OrdensServico = () => {
           const statusCor = ordem.status_os?.cor || "#808080"
           
           return (
-            <Card key={ordem.id} className="border-border">
+            <Card key={ordem.id} className="border-border hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-brilliant-blue-600">
+                    <div className="w-16 h-12 bg-brilliant-blue-100 dark:bg-brilliant-blue-900 rounded-lg flex items-center justify-center">
+                      <span className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300 text-xs">
                         {String(ordem.numero_os || 0).padStart(3, '0')}
-                      </div>
-                      <div className="text-xs text-muted-foreground">O.S.</div>
+                      </span>
                     </div>
                     
                     <div className="flex-1">
@@ -154,7 +157,7 @@ const OrdensServico = () => {
                         R$ {(ordem.valor_final || 0).toFixed(2)}
                       </div>
                       <div 
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
                         style={{ 
                           backgroundColor: statusCor + '20', 
                           color: statusCor 
@@ -175,6 +178,7 @@ const OrdensServico = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => handleView(ordem)}
+                      className="hover:bg-muted"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -182,6 +186,7 @@ const OrdensServico = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => handleEdit(ordem)}
+                      className="hover:bg-muted"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>

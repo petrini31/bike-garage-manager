@@ -14,18 +14,17 @@ export const useFornecedores = () => {
           *,
           fornecedor_tags (
             tag_id,
-            tags (id, nome, cor, created_at)
+            tags (
+              id,
+              nome,
+              cor
+            )
           )
         `)
         .order("nome")
       
       if (error) throw error
-      
-      // Transform the data to match the expected structure with correct types
-      return data.map(fornecedor => ({
-        ...fornecedor,
-        tags: fornecedor.fornecedor_tags?.map(ft => ft.tags).filter(Boolean) || []
-      })) as Fornecedor[]
+      return data as Fornecedor[]
     }
   })
 }
@@ -34,15 +33,29 @@ export const useCreateFornecedor = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (fornecedor: Omit<Fornecedor, "id" | "created_at" | "updated_at" | "tags">) => {
-      const { data, error } = await supabase
+    mutationFn: async ({ fornecedor, tags }: { fornecedor: Omit<Fornecedor, "id" | "created_at" | "updated_at">, tags: string[] }) => {
+      const { data: fornecedorData, error: fornecedorError } = await supabase
         .from("fornecedores")
         .insert(fornecedor)
         .select()
         .single()
       
-      if (error) throw error
-      return data
+      if (fornecedorError) throw fornecedorError
+      
+      if (tags && tags.length > 0) {
+        const tagRelations = tags.map(tagId => ({
+          fornecedor_id: fornecedorData.id,
+          tag_id: tagId
+        }))
+        
+        const { error: tagError } = await supabase
+          .from("fornecedor_tags")
+          .insert(tagRelations)
+        
+        if (tagError) throw tagError
+      }
+      
+      return fornecedorData
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fornecedores"] })
@@ -65,40 +78,35 @@ export const useUpdateFornecedor = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async ({ id, tags, ...fornecedor }: Partial<Fornecedor> & { id: string, tags?: string[] }) => {
-      const { data, error } = await supabase
+    mutationFn: async ({ id, fornecedor, tags }: { id: string, fornecedor: Partial<Fornecedor>, tags: string[] }) => {
+      const { data: fornecedorData, error: fornecedorError } = await supabase
         .from("fornecedores")
         .update(fornecedor)
         .eq("id", id)
         .select()
         .single()
       
-      if (error) throw error
+      if (fornecedorError) throw fornecedorError
       
-      // Handle tags if provided
-      if (tags !== undefined) {
-        // Remove existing tags
-        await supabase
-          .from("fornecedor_tags")
-          .delete()
-          .eq("fornecedor_id", id)
+      await supabase
+        .from("fornecedor_tags")
+        .delete()
+        .eq("fornecedor_id", id)
+      
+      if (tags && tags.length > 0) {
+        const tagRelations = tags.map(tagId => ({
+          fornecedor_id: id,
+          tag_id: tagId
+        }))
         
-        // Add new tags
-        if (tags.length > 0) {
-          const tagRelations = tags.map(tagId => ({
-            fornecedor_id: id,
-            tag_id: tagId
-          }))
-          
-          const { error: tagsError } = await supabase
-            .from("fornecedor_tags")
-            .insert(tagRelations)
-          
-          if (tagsError) throw tagsError
-        }
+        const { error: tagError } = await supabase
+          .from("fornecedor_tags")
+          .insert(tagRelations)
+        
+        if (tagError) throw tagError
       }
       
-      return data
+      return fornecedorData
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fornecedores"] })
@@ -110,6 +118,35 @@ export const useUpdateFornecedor = () => {
     onError: (error) => {
       toast({
         title: "Erro ao atualizar fornecedor",
+        description: error.message,
+        variant: "destructive"
+      })
+    }
+  })
+}
+
+export const useDeleteFornecedor = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("fornecedores")
+        .delete()
+        .eq("id", id)
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fornecedores"] })
+      toast({
+        title: "Fornecedor excluído com sucesso!",
+        description: "O fornecedor foi removido do sistema."
+      })
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao excluir fornecedor",
         description: error.message,
         variant: "destructive"
       })
