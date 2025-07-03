@@ -14,7 +14,7 @@ export const useFornecedores = () => {
           *,
           fornecedor_tags (
             tag_id,
-            tags (id, nome, cor)
+            tags (id, nome, cor, created_at)
           )
         `)
         .order("nome")

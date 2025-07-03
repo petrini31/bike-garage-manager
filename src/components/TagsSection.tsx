@@ -28,6 +28,11 @@ export const TagsSection = () => {
     setProdutosByTagDialogOpen(true)
   }
 
+  const handleSaveTag = (tagData: Partial<Tag> & { id?: string }) => {
+    // Esta função será chamada pelo EditTagDialog
+    console.log("Saving tag:", tagData)
+  }
+
   return (
     <>
       <Card className="border-border">
@@ -92,6 +97,7 @@ export const TagsSection = () => {
         open={editTagDialogOpen} 
         onOpenChange={setEditTagDialogOpen}
         tag={selectedTag}
+        onSave={handleSaveTag}
       />
 
       <ProdutosByTagDialog

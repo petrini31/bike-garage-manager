@@ -12,10 +12,10 @@ export const useProdutos = () => {
         .from("produtos")
         .select(`
           *,
-          fornecedores (nome),
+          fornecedores (id, nome, cnpj, ativo, created_at, updated_at),
           produto_tags (
             tag_id,
-            tags (id, nome, cor)
+            tags (id, nome, cor, created_at)
           )
         `)
         .order("nome")
@@ -39,7 +39,7 @@ export const useProdutosByTag = (tagId: string) => {
         .from("produtos")
         .select(`
           *,
-          fornecedores (nome),
+          fornecedores (id, nome, cnpj, ativo, created_at, updated_at),
           produto_tags!inner (tag_id)
         `)
         .eq("produto_tags.tag_id", tagId)
