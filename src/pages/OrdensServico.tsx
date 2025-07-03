@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -6,8 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "lucide-react"
-import { Plus, Phone, Eye, Edit } from "lucide-react"
+import { Calendar, Plus, Phone, Eye, Edit } from "lucide-react"
 import { useOrdensServico } from "@/hooks/useOrdensServico"
 import { useClientes } from "@/hooks/useClientes"
 import { useStatusOS } from "@/hooks/useStatusOS"
@@ -48,16 +46,16 @@ const OrdensServico = () => {
 
   const filteredOrdens = ordens?.filter((ordem) => {
     const searchRegex = new RegExp(searchTerm, "i")
-    const clienteRegex = new RegExp(clienteFilter, "i")
     
-    const searchMatch = searchRegex.test(ordem.cliente_nome) || searchRegex.test(ordem.numero_os.toString())
-    const clienteMatch = clienteFilter ? clienteRegex.test(ordem.cliente_nome) : true
+    // CORREÇÃO: Verificamos se cliente_nome existe antes de aplicar o regex.
+    const clienteMatch = clienteFilter ? ordem.cliente_nome && new RegExp(clienteFilter, "i").test(ordem.cliente_nome) : true
     const statusMatch = statusFilter ? ordem.status_id === statusFilter : true
+    
+    const searchMatch = (ordem.cliente_nome && searchRegex.test(ordem.cliente_nome)) || (ordem.numero_os && searchRegex.test(ordem.numero_os.toString()))
     
     return searchMatch && clienteMatch && statusMatch
   })
 
-  // Get unique status list from ordens data
   const uniqueStatusList = statusList || []
 
   if (isLoading) return <div>Carregando ordens de serviço...</div>
@@ -121,75 +119,82 @@ const OrdensServico = () => {
 
       {/* Lista de Ordens */}
       <div className="grid gap-4">
-        {filteredOrdens?.map((ordem) => (
-          <Card key={ordem.id} className="border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-brilliant-blue-600">
-                      {String(ordem.numero_os).padStart(3, '0')}
+        {filteredOrdens?.map((ordem) => {
+          // CORREÇÃO: Definimos cores e nomes padrão para o caso de o status ser nulo
+          const statusNome = ordem.status_os?.nome || "Sem Status"
+          const statusCor = ordem.status_os?.cor || "#808080" // Cinza como fallback
+          
+          return (
+            <Card key={ordem.id} className="border-border">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-brilliant-blue-600">
+                        {String(ordem.numero_os).padStart(3, '0')}
+                      </div>
+                      <div className="text-xs text-muted-foreground">O.S.</div>
                     </div>
-                    <div className="text-xs text-muted-foreground">O.S.</div>
-                  </div>
-                  
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-foreground">{ordem.cliente_nome}</h3>
-                    <div className="flex items-center gap-4 mt-1">
-                      {ordem.cliente_telefone && (
+                    
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">{ordem.cliente_nome}</h3>
+                      <div className="flex items-center gap-4 mt-1">
+                        {ordem.cliente_telefone && (
+                          <span className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {ordem.cliente_telefone}
+                          </span>
+                        )}
                         <span className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {ordem.cliente_telefone}
+                          <Calendar className="h-3 w-3" />
+                          {/* CORREÇÃO: Verificamos se a data existe antes de formatar */}
+                          {ordem.created_at ? format(new Date(ordem.created_at), "dd/MM/yyyy", { locale: ptBR }) : 'Data inválida'}
                         </span>
-                      )}
-                      <span className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {format(new Date(ordem.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                      </span>
+                      </div>
+                    </div>
+                    
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-foreground">
+                        R$ {ordem.valor_final?.toFixed(2) || '0.00'}
+                      </div>
+                      <div 
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium cursor-pointer"
+                        style={{ 
+                          backgroundColor: statusCor + '20', 
+                          color: statusCor 
+                        }}
+                        onClick={() => handleQuickStatusEdit(ordem)}
+                      >
+                        <div 
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: statusCor }}
+                        />
+                        {statusNome}
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-foreground">
-                      R$ {ordem.valor_final.toFixed(2)}
-                    </div>
-                    <div 
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium cursor-pointer"
-                      style={{ 
-                        backgroundColor: ordem.status_os?.cor + '20', 
-                        color: ordem.status_os?.cor 
-                      }}
-                      onClick={() => handleQuickStatusEdit(ordem)}
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleView(ordem)}
                     >
-                      <div 
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: ordem.status_os?.cor }}
-                      />
-                      {ordem.status_os?.nome || "Sem Status"}
-                    </div>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleEdit(ordem)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-2 ml-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleView(ordem)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleEdit(ordem)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       <OSDialog
