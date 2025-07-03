@@ -56,7 +56,7 @@ export const useCreateProduto = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (produto: Omit<Produto, "id" | "created_at" | "updated_at" | "lucro">) => {
+    mutationFn: async (produto: Omit<Produto, "id" | "created_at" | "updated_at" | "lucro" | "tags">) => {
       // Gerar SKU se não fornecido
       if (!produto.sku) {
         const sku = produto.nome.substring(0, 3).toUpperCase() + 

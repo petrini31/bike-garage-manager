@@ -34,7 +34,7 @@ export const useCreateFornecedor = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (fornecedor: Omit<Fornecedor, "id" | "created_at" | "updated_at">) => {
+    mutationFn: async (fornecedor: Omit<Fornecedor, "id" | "created_at" | "updated_at" | "tags">) => {
       const { data, error } = await supabase
         .from("fornecedores")
         .insert(fornecedor)
