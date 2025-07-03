@@ -117,7 +117,7 @@ export const useUpdateProduto = () => {
         if (tags.length > 0) {
           const tagRelations = tags.map(tagId => ({
             produto_id: id,
-            tag_id: tagId
+            tag_id: tagId  // tagId já é uma string aqui
           }))
           
           const { error: tagsError } = await supabase
