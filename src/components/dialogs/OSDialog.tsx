@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +12,6 @@ import { useProdutos } from "@/hooks/useProdutos"
 import { useCreateOrdemServico, useUpdateOrdemServico, useOrdemServicoById } from "@/hooks/useOrdensServico"
 import { OrdemServico, OSItem } from "@/types/database"
 import { Plus, X, Search, UserPlus } from "lucide-react"
-import { ClienteQuickSave } from "@/components/ClienteQuickSave"
 import { ClienteDialog } from "@/components/dialogs/ClienteDialog"
 
 interface OSDialogProps {
@@ -31,9 +30,9 @@ export function OSDialog({ open, onOpenChange, ordem, mode }: OSDialogProps) {
   const [observacoes, setObservacoes] = useState("")
   const [itens, setItens] = useState<Omit<OSItem, "id" | "os_id" | "created_at">[]>([])
   const [descontoTotal, setDescontoTotal] = useState(0)
-  const [showQuickSave, setShowQuickSave] = useState(false)
   const [clienteDialogOpen, setClienteDialogOpen] = useState(false)
-  const [isManualEntry, setIsManualEntry] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [showClienteList, setShowClienteList] = useState(false)
 
   const { data: clientes } = useClientes()
   const { data: statusList } = useStatusOS()
@@ -97,49 +96,32 @@ export function OSDialog({ open, onOpenChange, ordem, mode }: OSDialogProps) {
       setObservacoes("")
       setDescontoTotal(0)
       setItens([{ numero_item: 1, quantidade: 1, descricao: "", preco_unitario: 0, desconto: 0, total: 0 }])
-      setIsManualEntry(false)
-      setShowQuickSave(false)
+      setSearchTerm("")
+      setShowClienteList(false)
     }
   }, [mode, osData, open])
 
-  const handleClienteNomeChange = (value: string) => {
+  // Filtrar clientes baseado na busca
+  const filteredClientes = useMemo(() => {
+    if (!searchTerm.trim()) return []
+    return clientes?.filter(cliente => 
+      cliente.nome?.toLowerCase().includes(searchTerm.toLowerCase())
+    ).slice(0, 5) || []
+  }, [clientes, searchTerm])
+
+  const handleClienteSearch = (value: string) => {
+    setSearchTerm(value)
     setClienteNome(value)
-    
-    // Se o usuário está digitando manualmente e não selecionou um cliente da lista
-    if (isManualEntry && value.trim() && !showQuickSave) {
-      // Delay para mostrar a sugestão após o usuário parar de digitar
-      setTimeout(() => {
-        if (clienteNome.trim() && clienteTelefone.trim()) {
-          setShowQuickSave(true)
-        }
-      }, 1500)
-    }
+    setShowClienteList(value.trim().length > 0)
   }
 
-  const handleClienteTelefoneChange = (value: string) => {
-    setClienteTelefone(value)
-    
-    // Se já tem nome e agora tem telefone, mostrar sugestão
-    if (isManualEntry && clienteNome.trim() && value.trim() && !showQuickSave) {
-      setTimeout(() => {
-        setShowQuickSave(true)
-      }, 500)
-    }
-  }
-
-  const handleClienteSelect = (clienteNome: string) => {
-    const cliente = clientes?.find(c => c.nome === clienteNome)
-    if (cliente) {
-      setClienteNome(cliente.nome)
-      setClienteTelefone(cliente.telefone || "")
-      setClienteEndereco(cliente.endereco || "")
-      setClienteCpfCnpj(cliente.cpf_cnpj || "")
-      setIsManualEntry(false)
-      setShowQuickSave(false)
-    } else {
-      setClienteNome(clienteNome)
-      setIsManualEntry(true)
-    }
+  const handleClienteSelect = (cliente: any) => {
+    setClienteNome(cliente.nome)
+    setClienteTelefone(cliente.telefone || "")
+    setClienteEndereco(cliente.endereco || "")
+    setClienteCpfCnpj(cliente.cpf_cnpj || "")
+    setSearchTerm(cliente.nome)
+    setShowClienteList(false)
   }
 
   const handleClienteDialogSuccess = (cliente: any) => {
@@ -147,8 +129,8 @@ export function OSDialog({ open, onOpenChange, ordem, mode }: OSDialogProps) {
     setClienteTelefone(cliente.telefone || "")
     setClienteEndereco(cliente.endereco || "")
     setClienteCpfCnpj(cliente.cpf_cnpj || "")
-    setIsManualEntry(false)
-    setShowQuickSave(false)
+    setSearchTerm(cliente.nome)
+    setShowClienteList(false)
   }
 
   const addItem = () => {
@@ -245,46 +227,44 @@ export function OSDialog({ open, onOpenChange, ordem, mode }: OSDialogProps) {
           <div className="space-y-6">
             {/* Cliente Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="relative">
                 <Label htmlFor="cliente">Cliente *</Label>
                 <div className="flex gap-2">
                   {!isReadOnly ? (
                     <>
-                      <Select value={clienteNome} onValueChange={handleClienteSelect}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Selecione ou digite o nome" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {clientes?.filter(cliente => cliente.nome?.trim()).map((cliente) => (
-                            <SelectItem key={cliente.id} value={cliente.nome}>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{cliente.nome}</span>
-                                <span className="text-sm text-muted-foreground">
-                                  {cliente.telefone && `Tel: ${cliente.telefone}`}
-                                  {cliente.cpf_cnpj && ` • CPF/CNPJ: ${cliente.cpf_cnpj}`}
-                                </span>
-                                {cliente.endereco && (
-                                  <span className="text-xs text-muted-foreground">{cliente.endereco}</span>
+                      <div className="relative flex-1">
+                        <Input 
+                          placeholder="Digite o nome do cliente"
+                          value={clienteNome}
+                          onChange={(e) => handleClienteSearch(e.target.value)}
+                          onFocus={() => setShowClienteList(searchTerm.trim().length > 0)}
+                          onBlur={() => setTimeout(() => setShowClienteList(false), 200)}
+                        />
+                        {showClienteList && filteredClientes.length > 0 && (
+                          <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                            {filteredClientes.map((cliente) => (
+                              <div
+                                key={cliente.id}
+                                className="p-3 hover:bg-muted cursor-pointer border-b border-border last:border-b-0"
+                                onClick={() => handleClienteSelect(cliente)}
+                              >
+                                <div className="font-medium">{cliente.nome}</div>
+                                {cliente.telefone && (
+                                  <div className="text-sm text-muted-foreground">
+                                    Tel: {cliente.telefone}
+                                  </div>
                                 )}
                               </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input 
-                        placeholder="Ou digite manualmente"
-                        value={clienteNome}
-                        onChange={(e) => {
-                          handleClienteNomeChange(e.target.value)
-                          setIsManualEntry(true)
-                        }}
-                        className="flex-1"
-                      />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <Button 
                         type="button"
                         variant="outline" 
                         size="sm"
                         onClick={() => setClienteDialogOpen(true)}
+                        title="Cadastrar novo cliente"
                       >
                         <UserPlus className="h-4 w-4" />
                       </Button>
@@ -299,7 +279,7 @@ export function OSDialog({ open, onOpenChange, ordem, mode }: OSDialogProps) {
                 <Label htmlFor="telefone">Telefone</Label>
                 <Input 
                   value={clienteTelefone} 
-                  onChange={(e) => handleClienteTelefoneChange(e.target.value)}
+                  onChange={(e) => setClienteTelefone(e.target.value)}
                   readOnly={isReadOnly}
                   className={isReadOnly ? "bg-muted" : ""}
                 />
@@ -514,16 +494,6 @@ export function OSDialog({ open, onOpenChange, ordem, mode }: OSDialogProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <ClienteQuickSave
-        show={showQuickSave}
-        clienteNome={clienteNome}
-        clienteTelefone={clienteTelefone}
-        clienteEndereco={clienteEndereco}
-        clienteCpfCnpj={clienteCpfCnpj}
-        onSave={() => setShowQuickSave(false)}
-        onCancel={() => setShowQuickSave(false)}
-      />
 
       <ClienteDialog
         trigger={<div />}

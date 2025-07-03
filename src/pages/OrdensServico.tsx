@@ -129,15 +129,15 @@ const OrdensServico = () => {
             <Card key={ordem.id} className="border-border hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-12 bg-brilliant-blue-100 dark:bg-brilliant-blue-900 rounded-lg flex items-center justify-center">
-                      <span className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300 text-xs">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-16 h-16 bg-brilliant-blue-100 dark:bg-brilliant-blue-900 rounded-lg flex items-center justify-center shrink-0">
+                      <span className="font-bold text-brilliant-blue-700 dark:text-brilliant-blue-300 text-sm">
                         {String(ordem.numero_os || 0).padStart(3, '0')}
                       </span>
                     </div>
                     
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{ordem.cliente_nome || "Cliente não informado"}</h3>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground truncate">{ordem.cliente_nome || "Cliente não informado"}</h3>
                       <div className="flex items-center gap-4 mt-1">
                         {ordem.cliente_telefone && (
                           <span className="text-sm text-muted-foreground flex items-center gap-1">
@@ -151,7 +151,9 @@ const OrdensServico = () => {
                         </span>
                       </div>
                     </div>
-                    
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
                     <div className="text-right">
                       <div className="text-lg font-bold text-foreground">
                         R$ {(ordem.valor_final || 0).toFixed(2)}
@@ -171,25 +173,25 @@ const OrdensServico = () => {
                         {statusNome}
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleView(ordem)}
-                      className="hover:bg-muted"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEdit(ordem)}
-                      className="hover:bg-muted"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleView(ordem)}
+                        className="hover:bg-muted"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(ordem)}
+                        className="hover:bg-muted"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
