@@ -526,6 +526,7 @@ export function OSDialog({ open, onOpenChange, ordem, mode }: OSDialogProps) {
       />
 
       <ClienteDialog
+        trigger={<div />}
         open={clienteDialogOpen}
         onOpenChange={setClienteDialogOpen}
         mode="create"
