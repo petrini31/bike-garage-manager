@@ -22,7 +22,7 @@ export const useProdutos = () => {
       
       if (error) throw error
       
-      // Transform the data to match the expected structure
+      // Transform the data to match the expected structure with correct types
       return data.map(produto => ({
         ...produto,
         tags: produto.produto_tags?.map(pt => pt.tags).filter(Boolean) || []
@@ -117,7 +117,7 @@ export const useUpdateProduto = () => {
         if (tags.length > 0) {
           const tagRelations = tags.map(tagId => ({
             produto_id: id,
-            tag_id: tagId  // tagId já é uma string aqui
+            tag_id: tagId
           }))
           
           const { error: tagsError } = await supabase

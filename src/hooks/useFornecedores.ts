@@ -21,7 +21,7 @@ export const useFornecedores = () => {
       
       if (error) throw error
       
-      // Transform the data to match the expected structure
+      // Transform the data to match the expected structure with correct types
       return data.map(fornecedor => ({
         ...fornecedor,
         tags: fornecedor.fornecedor_tags?.map(ft => ft.tags).filter(Boolean) || []
@@ -87,7 +87,7 @@ export const useUpdateFornecedor = () => {
         if (tags.length > 0) {
           const tagRelations = tags.map(tagId => ({
             fornecedor_id: id,
-            tag_id: tagId  // tagId já é uma string aqui
+            tag_id: tagId
           }))
           
           const { error: tagsError } = await supabase
