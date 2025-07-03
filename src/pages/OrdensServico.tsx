@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -47,7 +48,6 @@ const OrdensServico = () => {
   const filteredOrdens = ordens?.filter((ordem) => {
     const searchRegex = new RegExp(searchTerm, "i")
     
-    // CORREÇÃO: Verificamos se cliente_nome existe antes de aplicar o regex.
     const clienteMatch = clienteFilter ? ordem.cliente_nome && new RegExp(clienteFilter, "i").test(ordem.cliente_nome) : true
     const statusMatch = statusFilter ? ordem.status_id === statusFilter : true
     
@@ -55,8 +55,6 @@ const OrdensServico = () => {
     
     return searchMatch && clienteMatch && statusMatch
   })
-
-  const uniqueStatusList = statusList || []
 
   if (isLoading) return <div>Carregando ordens de serviço...</div>
   if (isError) return <div>Erro ao carregar ordens de serviço.</div>
@@ -94,8 +92,8 @@ const OrdensServico = () => {
             <SelectValue placeholder="Filtrar por cliente" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os clientes</SelectItem>
-            {clientes?.map((cliente) => (
+            <SelectItem value="todos">Todos os clientes</SelectItem>
+            {clientes?.filter(cliente => cliente.nome && cliente.nome.trim() !== "").map((cliente) => (
               <SelectItem key={cliente.id} value={cliente.nome}>
                 {cliente.nome}
               </SelectItem>
@@ -107,8 +105,8 @@ const OrdensServico = () => {
             <SelectValue placeholder="Filtrar por status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os status</SelectItem>
-            {uniqueStatusList.map((status) => (
+            <SelectItem value="todos">Todos os status</SelectItem>
+            {statusList?.filter(status => status.id && status.nome && status.nome.trim() !== "").map((status) => (
               <SelectItem key={status.id} value={status.id}>
                 {status.nome}
               </SelectItem>
@@ -120,9 +118,8 @@ const OrdensServico = () => {
       {/* Lista de Ordens */}
       <div className="grid gap-4">
         {filteredOrdens?.map((ordem) => {
-          // CORREÇÃO: Definimos cores e nomes padrão para o caso de o status ser nulo
           const statusNome = ordem.status_os?.nome || "Sem Status"
-          const statusCor = ordem.status_os?.cor || "#808080" // Cinza como fallback
+          const statusCor = ordem.status_os?.cor || "#808080"
           
           return (
             <Card key={ordem.id} className="border-border">
@@ -131,13 +128,13 @@ const OrdensServico = () => {
                   <div className="flex items-center gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-brilliant-blue-600">
-                        {String(ordem.numero_os).padStart(3, '0')}
+                        {String(ordem.numero_os || 0).padStart(3, '0')}
                       </div>
                       <div className="text-xs text-muted-foreground">O.S.</div>
                     </div>
                     
                     <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{ordem.cliente_nome}</h3>
+                      <h3 className="font-semibold text-foreground">{ordem.cliente_nome || "Cliente não informado"}</h3>
                       <div className="flex items-center gap-4 mt-1">
                         {ordem.cliente_telefone && (
                           <span className="text-sm text-muted-foreground flex items-center gap-1">
@@ -147,7 +144,6 @@ const OrdensServico = () => {
                         )}
                         <span className="text-sm text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {/* CORREÇÃO: Verificamos se a data existe antes de formatar */}
                           {ordem.created_at ? format(new Date(ordem.created_at), "dd/MM/yyyy", { locale: ptBR }) : 'Data inválida'}
                         </span>
                       </div>
@@ -155,7 +151,7 @@ const OrdensServico = () => {
                     
                     <div className="text-right">
                       <div className="text-lg font-bold text-foreground">
-                        R$ {ordem.valor_final?.toFixed(2) || '0.00'}
+                        R$ {(ordem.valor_final || 0).toFixed(2)}
                       </div>
                       <div 
                         className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium cursor-pointer"
@@ -195,6 +191,12 @@ const OrdensServico = () => {
             </Card>
           )
         })}
+        
+        {filteredOrdens?.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhuma ordem de serviço encontrada.
+          </div>
+        )}
       </div>
 
       <OSDialog

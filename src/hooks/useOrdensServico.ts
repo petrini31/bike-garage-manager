@@ -17,7 +17,11 @@ export const useOrdensServico = () => {
         `)
         .order("numero_os", { ascending: false })
       
-      if (error) throw error
+      if (error) {
+        console.error("Erro ao buscar ordens de serviço:", error)
+        throw error
+      }
+      
       return data as OrdemServico[]
     }
   })
@@ -27,6 +31,8 @@ export const useOrdemServicoById = (id: string) => {
   return useQuery({
     queryKey: ["ordem-servico", id],
     queryFn: async () => {
+      if (!id) return null
+      
       const { data, error } = await supabase
         .from("ordens_servico")
         .select(`
@@ -37,7 +43,11 @@ export const useOrdemServicoById = (id: string) => {
         .eq("id", id)
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error("Erro ao buscar ordem de serviço:", error)
+        throw error
+      }
+      
       return data
     },
     enabled: !!id
@@ -55,18 +65,26 @@ export const useCreateOrdemServico = () => {
         .select()
         .single()
       
-      if (osError) throw osError
+      if (osError) {
+        console.error("Erro ao criar ordem de serviço:", osError)
+        throw osError
+      }
       
-      const itensWithOsId = itens.map(item => ({
-        ...item,
-        os_id: osData.id
-      }))
-      
-      const { error: itensError } = await supabase
-        .from("os_itens")
-        .insert(itensWithOsId)
-      
-      if (itensError) throw itensError
+      if (itens && itens.length > 0) {
+        const itensWithOsId = itens.map(item => ({
+          ...item,
+          os_id: osData.id
+        }))
+        
+        const { error: itensError } = await supabase
+          .from("os_itens")
+          .insert(itensWithOsId)
+        
+        if (itensError) {
+          console.error("Erro ao criar itens da ordem de serviço:", itensError)
+          throw itensError
+        }
+      }
       
       return osData
     },
@@ -78,6 +96,7 @@ export const useCreateOrdemServico = () => {
       })
     },
     onError: (error) => {
+      console.error("Erro na criação da O.S.:", error)
       toast({
         title: "Erro ao criar O.S.",
         description: error.message,
@@ -99,7 +118,11 @@ export const useUpdateOrdemServico = () => {
         .select()
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error("Erro ao atualizar ordem de serviço:", error)
+        throw error
+      }
+      
       return data
     },
     onSuccess: () => {
@@ -110,6 +133,7 @@ export const useUpdateOrdemServico = () => {
       })
     },
     onError: (error) => {
+      console.error("Erro na atualização da O.S.:", error)
       toast({
         title: "Erro ao atualizar O.S.",
         description: error.message,
