@@ -89,17 +89,19 @@ export function ProdutoDialog({ open, onOpenChange, produto, mode }: ProdutoDial
   }
 
   const handleSave = () => {
-    const produtoData = {
-      ...formData,
-      tag_ids: selectedTags
-    }
-
     if (mode === "create") {
-      createProduto.mutate(produtoData, {
+      createProduto.mutate({
+        produto: formData,
+        tags: selectedTags
+      }, {
         onSuccess: () => onOpenChange(false)
       })
     } else if (mode === "edit" && produto) {
-      updateProduto.mutate({ ...produtoData, id: produto.id }, {
+      updateProduto.mutate({ 
+        id: produto.id, 
+        produto: formData, 
+        tags: selectedTags 
+      }, {
         onSuccess: () => onOpenChange(false)
       })
     }

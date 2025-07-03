@@ -70,7 +70,10 @@ export const FornecedorDialog = ({ open, onOpenChange, fornecedor, mode }: Forne
     const { tagIds, ...fornecedorData } = formData
     
     if (mode === "create") {
-      createFornecedor.mutate(fornecedorData, {
+      createFornecedor.mutate({ 
+        fornecedor: fornecedorData, 
+        tags: tagIds 
+      }, {
         onSuccess: () => {
           onOpenChange(false)
         }
@@ -78,8 +81,8 @@ export const FornecedorDialog = ({ open, onOpenChange, fornecedor, mode }: Forne
     } else if (mode === "edit" && fornecedor) {
       updateFornecedor.mutate({
         id: fornecedor.id,
-        tags: tagIds,
-        ...fornecedorData
+        fornecedor: fornecedorData,
+        tags: tagIds
       }, {
         onSuccess: () => {
           onOpenChange(false)

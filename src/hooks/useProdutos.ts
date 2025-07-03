@@ -13,7 +13,12 @@ export const useProdutos = () => {
         .select(`
           *,
           fornecedores (
-            nome
+            id,
+            nome,
+            cnpj,
+            ativo,
+            created_at,
+            updated_at
           ),
           produto_tags (
             tag_id,
@@ -29,6 +34,30 @@ export const useProdutos = () => {
       if (error) throw error
       return data as Produto[]
     }
+  })
+}
+
+export const useProdutosByTag = (tagId: string) => {
+  return useQuery({
+    queryKey: ["produtos-by-tag", tagId],
+    queryFn: async () => {
+      if (!tagId) return []
+      
+      const { data, error } = await supabase
+        .from("produtos")
+        .select(`
+          *,
+          produto_tags!inner (
+            tag_id
+          )
+        `)
+        .eq("produto_tags.tag_id", tagId)
+        .order("nome")
+      
+      if (error) throw error
+      return data as Produto[]
+    },
+    enabled: !!tagId
   })
 }
 

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -139,6 +140,15 @@ export function OSDialog({ open, onOpenChange, ordem, mode }: OSDialogProps) {
       setClienteNome(clienteNome)
       setIsManualEntry(true)
     }
+  }
+
+  const handleClienteDialogSuccess = (cliente: any) => {
+    setClienteNome(cliente.nome)
+    setClienteTelefone(cliente.telefone || "")
+    setClienteEndereco(cliente.endereco || "")
+    setClienteCpfCnpj(cliente.cpf_cnpj || "")
+    setIsManualEntry(false)
+    setShowQuickSave(false)
   }
 
   const addItem = () => {
@@ -519,14 +529,6 @@ export function OSDialog({ open, onOpenChange, ordem, mode }: OSDialogProps) {
         open={clienteDialogOpen}
         onOpenChange={setClienteDialogOpen}
         mode="create"
-        onSuccess={(cliente) => {
-          setClienteNome(cliente.nome)
-          setClienteTelefone(cliente.telefone || "")
-          setClienteEndereco(cliente.endereco || "")
-          setClienteCpfCnpj(cliente.cpf_cnpj || "")
-          setIsManualEntry(false)
-          setShowQuickSave(false)
-        }}
       />
     </>
   )
