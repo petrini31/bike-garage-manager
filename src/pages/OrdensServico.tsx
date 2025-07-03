@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -9,6 +10,7 @@ import { Calendar } from "lucide-react"
 import { Plus, Phone, Eye, Edit } from "lucide-react"
 import { useOrdensServico } from "@/hooks/useOrdensServico"
 import { useClientes } from "@/hooks/useClientes"
+import { useStatusOS } from "@/hooks/useStatusOS"
 import { QuickStatusDialog } from "@/components/dialogs/QuickStatusDialog"
 import { OrdemServico } from "@/types/database"
 import { OSDialog } from "@/components/dialogs/OSDialog"
@@ -21,6 +23,7 @@ const OrdensServico = () => {
 
   const { data: ordens, isLoading, isError } = useOrdensServico()
   const { data: clientes } = useClientes()
+  const { data: statusList } = useStatusOS()
 
   const [osDialogOpen, setOsDialogOpen] = useState(false)
   const [selectedOS, setSelectedOS] = useState<OrdemServico | null>(null)
@@ -49,10 +52,13 @@ const OrdensServico = () => {
     
     const searchMatch = searchRegex.test(ordem.cliente_nome) || searchRegex.test(ordem.numero_os.toString())
     const clienteMatch = clienteFilter ? clienteRegex.test(ordem.cliente_nome) : true
-    const statusMatch = statusFilter ? ordem.status_os?.id === statusFilter : true
+    const statusMatch = statusFilter ? ordem.status_id === statusFilter : true
     
     return searchMatch && clienteMatch && statusMatch
   })
+
+  // Get unique status list from ordens data
+  const uniqueStatusList = statusList || []
 
   if (isLoading) return <div>Carregando ordens de serviço...</div>
   if (isError) return <div>Erro ao carregar ordens de serviço.</div>
@@ -104,9 +110,9 @@ const OrdensServico = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">Todos os status</SelectItem>
-            {ordens?.map((ordem) => (
-              <SelectItem key={ordem.status_os?.id} value={ordem.status_os?.id || ""}>
-                {ordem.status_os?.nome}
+            {uniqueStatusList.map((status) => (
+              <SelectItem key={status.id} value={status.id}>
+                {status.nome}
               </SelectItem>
             ))}
           </SelectContent>

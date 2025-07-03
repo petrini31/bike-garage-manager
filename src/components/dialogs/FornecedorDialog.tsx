@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useCreateFornecedor } from "@/hooks/useFornecedores"
+import { useCreateFornecedor, useUpdateFornecedor } from "@/hooks/useFornecedores"
 import { useTags } from "@/hooks/useTags"
 import { Fornecedor } from "@/types/database"
 
@@ -32,6 +32,7 @@ export const FornecedorDialog = ({ open, onOpenChange, fornecedor, mode }: Forne
   })
 
   const createFornecedor = useCreateFornecedor()
+  const updateFornecedor = useUpdateFornecedor()
   const { data: tags } = useTags()
 
   useEffect(() => {
@@ -70,6 +71,16 @@ export const FornecedorDialog = ({ open, onOpenChange, fornecedor, mode }: Forne
     
     if (mode === "create") {
       createFornecedor.mutate(fornecedorData, {
+        onSuccess: () => {
+          onOpenChange(false)
+        }
+      })
+    } else if (mode === "edit" && fornecedor) {
+      updateFornecedor.mutate({
+        id: fornecedor.id,
+        tags: tagIds,
+        ...fornecedorData
+      }, {
         onSuccess: () => {
           onOpenChange(false)
         }
@@ -249,7 +260,7 @@ export const FornecedorDialog = ({ open, onOpenChange, fornecedor, mode }: Forne
               </Button>
               <Button 
                 type="submit" 
-                disabled={createFornecedor.isPending}
+                disabled={createFornecedor.isPending || updateFornecedor.isPending}
                 className="bg-brilliant-blue-600 hover:bg-brilliant-blue-700"
               >
                 {mode === "create" ? "Criar Fornecedor" : "Salvar Alterações"}
