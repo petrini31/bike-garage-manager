@@ -126,3 +126,22 @@ export interface MetaFaturamento {
   created_at: string
   updated_at: string
 }
+
+export interface ReceitaManual {
+  id: string
+  descricao: string
+  valor: number
+  data: string
+  created_at: string
+}
+
+export interface Meta {
+  id: string
+  nome: string
+  valor_objetivo: number
+  valor_atual: number
+  data_inicio: string
+  data_fim: string
+  created_at: string
+  updated_at: string
+}
