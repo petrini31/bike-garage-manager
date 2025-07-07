@@ -21,8 +21,8 @@ import { GastoDialog } from "@/components/dialogs/GastoDialog"
 
 const Faturamento = () => {
   const [periodo, setPeriodo] = useState("mes")
-  const [categoriaFilter, setCategoriaFilter] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
+  const [categoriaFilter, setCategoriaFilter] = useState("todos")
+  const [statusFilter, setStatusFilter] = useState("todos")
   const [gastoDialogOpen, setGastoDialogOpen] = useState(false)
 
   const { data: metas } = useMetasFaturamento()
@@ -313,7 +313,7 @@ const Faturamento = () => {
                     <SelectValue placeholder="Filtrar por categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as categorias</SelectItem>
+                    <SelectItem value="todos">Todas as categorias</SelectItem>
                     <SelectItem value="Fornecedores">Fornecedores</SelectItem>
                     <SelectItem value="Funcionários">Funcionários</SelectItem>
                     <SelectItem value="Infraestrutura">Infraestrutura</SelectItem>
@@ -326,7 +326,7 @@ const Faturamento = () => {
                     <SelectValue placeholder="Filtrar por status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os status</SelectItem>
+                    <SelectItem value="todos">Todos os status</SelectItem>
                     <SelectItem value="Pendente">Pendente</SelectItem>
                     <SelectItem value="Pago">Pago</SelectItem>
                     <SelectItem value="Vencido">Vencido</SelectItem>
@@ -348,8 +348,8 @@ const Faturamento = () => {
                 <TableBody>
                   {gastos
                     ?.filter(gasto => {
-                      const categoriaMatch = !categoriaFilter || gasto.categoria === categoriaFilter
-                      const statusMatch = !statusFilter || gasto.status === statusFilter
+                      const categoriaMatch = categoriaFilter === "todos" || gasto.categoria === categoriaFilter
+                      const statusMatch = statusFilter === "todos" || gasto.status === statusFilter
                       return categoriaMatch && statusMatch
                     })
                     ?.map((gasto) => (
